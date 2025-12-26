@@ -1,0 +1,14 @@
+[package]
+name = "decoder"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+
+[features]
+fallback = [] # Stub all functions with legacy impl, for testing only
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72"
