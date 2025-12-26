@@ -93,7 +93,7 @@ function(libxaac_add_executable NAME LIB)
   target_include_directories(${NAME} PRIVATE ${ARG_INCLUDES})
   add_dependencies(${NAME} ${LIB} ${ARG_LIBS})
 
-  if(NOT MSVC)
+  if(NOT WIN32)
     target_link_libraries(${NAME} ${LIB} ${ARG_LIBS} m)
   else()
     target_link_libraries(${NAME} ${LIB} ${ARG_LIBS})
