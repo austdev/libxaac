@@ -10,5 +10,12 @@ fallback = [] # Stub all functions with legacy impl, for testing only
 
 [dependencies]
 
+[dev-dependencies]
+divan = "0.1"
+
 [build-dependencies]
 bindgen = "0.72"
+
+[[bench]]
+name = "scale_down_bench"
+harness = false

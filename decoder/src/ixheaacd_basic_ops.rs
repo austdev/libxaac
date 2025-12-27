@@ -1,4 +1,5 @@
 // decoder::ixheaacd_basic_ops
+
 const ADJ_SCALE: i32 = 11;
 
 pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
@@ -45,40 +46,26 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
-            *d = add32_sat(s >> shift, ADJ_SCALE);
+            *d = (s >> shift).saturating_add(ADJ_SCALE);
         }
     } else {
         let shift = (shift2 - shift1) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
-            *d = add32_sat(shl32_sat(*s, shift), ADJ_SCALE);
+            *d = shl32_sat(*s, shift).saturating_add(ADJ_SCALE);
         }
     }
 }
 
 /// Saturating left shift for 32-bit signed integers
 #[inline]
-pub fn add32_sat(a: i32, b: i32) -> i32 
+fn shl32_sat(a: i32, b: u32) -> i32 
 {
-    let sum = a as i64 + b as i64;
-    if sum > i32::MAX as i64 {
-        i32::MAX
-    } else if sum < i32::MIN as i64 {
-        i32::MIN
-    } else {
-        sum as i32
-    }
-}
-
-/// Saturating left shift for 32-bit signed integers
-#[inline]
-pub fn shl32_sat(a: i32, b: u32) -> i32 
-{
-    if a > (i32::MAX >> b) {
-        i32::MAX
-    } else if a < (i32::MIN >> b) {
-        i32::MIN
-    } else {
-        a << b
+    let max = i32::MAX >> b;
+    let min = i32::MIN >> b;
+    match a {
+        _ if a > max => i32::MAX,
+        _ if a < min => i32::MIN,
+        _ => a << b,
     }
 }
 
