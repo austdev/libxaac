@@ -1,6 +1,5 @@
 build/
 target/
-test/
 Cargo.lock
-*.srctr*
 gen_*.rs
+*.srctr*

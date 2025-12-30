@@ -10,7 +10,23 @@ include_directories(${LIBXAACDEC_INCLUDES})
 libxaac_add_executable(xaacdec libxaacdec SOURCES ${XAACDEC_SRCS} INCLUDES
                        ${LIBXAACDEC_INCLUDES})
 
-if(MSVC)
+if(NOT RC_FALLBACK)
+    target_link_libraries(xaacdec librustdec)
+    if(WIN32)
+        target_link_libraries(xaacdec kernel32 ws2_32 ntdll userenv dbghelp)
+    elseif(APPLE)
+        target_link_libraries(xaacdec pthread)
+        set_target_properties(xaacdec PROPERTIES
+            LINK_FLAGS
+                "-framework Security"
+                "-framework CoreFoundation"
+        )
+    elseif(UNIX)
+        target_link_libraries(xaacdec pthread dl m)
+    endif()
+endif()
+
+if(WIN32)
   set_target_properties(
     xaacdec
     PROPERTIES

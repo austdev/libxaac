@@ -8,7 +8,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 
     #[cfg(feature = "fallback")]
     unsafe {
-        crate::gen_ixheaacd_bind::ixheaacd_scale_down(
+        crate::gen_ixheaacd_ref::ixheaacd_scale_down(
             dest.as_mut_ptr(), 
             src.as_ptr() as *mut i32, 
             src.len() as i32, 
@@ -36,7 +36,7 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
     
     #[cfg(feature = "fallback")]
     unsafe {
-        crate::gen_ixheaacd_bind::ixheaacd_scale_down_adj(
+        crate::gen_ixheaacd_ref::ixheaacd_scale_down_adj(
             dest.as_mut_ptr(), 
             src.as_ptr() as *mut i32, 
             src.len() as i32, 

@@ -619,6 +619,7 @@ WORD8 ixheaacd_windowing_short4(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
   }
 }
 
+#if RC_FALLBACK
 VOID ixheaacd_scale_down(WORD32 *dest, WORD32 *src, WORD32 len, WORD8 shift1,
                          WORD8 shift2) {
   WORD32 i;
@@ -655,3 +656,4 @@ VOID ixheaacd_scale_down_adj(WORD32 *dest, WORD32 *src, WORD32 len,
     }
   }
 }
+#endif // RC_FALLBACK

@@ -13,7 +13,7 @@ include_directories(${LIBXAACENC_INCLUDES})
 libxaac_add_executable(xaacenc libxaacenc SOURCES ${XAACENC_SRCS} INCLUDES 
                        ${LIBXAACENC_INCLUDES})
 
-if (MSVC) 
+if (WIN32) 
     set_target_properties(
         xaacenc 
         PROPERTIES 
