@@ -1,8 +1,5 @@
 use divan::Bencher;
 
-// Import the functions we want to benchmark
-use decoder::ixheaacd_basic_ops::{scale_down, scale_down_adj};
-
 fn main() {
     divan::main();
 }
@@ -15,6 +12,9 @@ fn main() {
 mod scale_down_bench {
     use super::*;
 
+    // Import the functions we want to benchmark
+    use decoder::ixheaacd::{scale_down, scale_down_adj};
+    
     // ----------------------------------------------------------------------------
     // scale_down() benchmarks - Right shift (scale down)
     // ----------------------------------------------------------------------------
