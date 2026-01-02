@@ -4,7 +4,11 @@ pub mod ixheaacd;
 // next mod is needed for migration process only 
 mod gen_ixheaacd_ref;
 
-#[cfg(not(feature = "fallback"))]
+
+#[cfg(all(feature = "fallback", feature = "intergation"))]
+compile_error!("features \"fallback\" and \"intergation\" cannot be enabled at the same time");
+
+#[cfg(feature = "intergation")]
 mod integration_test {
 
     use crate::gen_ixheaacd_ref::*;

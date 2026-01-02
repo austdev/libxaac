@@ -1,7 +1,280 @@
 // decoder::ixheaacd_basic_ops
 
+//! Basic operations for the decoder, DSP primitives
+//!
+
+#[allow(dead_code)]
 const ADJ_SCALE: i32 = 11;
 
+ use std::mem;
+
+ #[repr(C)]  // remove this after migration
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub struct OffsetLengths {
+     pub lfac: i32,
+     pub n_flat_ls: i32,
+     pub n_trans_ls: i32,
+     pub n_long: i32,
+     pub n_short: i32,
+ }
+
+ impl OffsetLengths {
+
+     /// Borrow as C struct (zero-cost, no copy)
+     pub fn as_c_ref(&self) -> &crate::gen_ixheaacd_ref::offset_lengths {
+         unsafe { &*(self as *const Self as *const crate::gen_ixheaacd_ref::offset_lengths) }
+     }
+
+     /// Borrow mutably as C struct (zero-cost, no copy)
+     pub fn as_c_mut(&mut self) -> &mut crate::gen_ixheaacd_ref::offset_lengths {
+         unsafe { &mut *(self as *mut Self as *mut crate::gen_ixheaacd_ref::offset_lengths) }
+     }
+
+     /// Create from C struct reference (zero-cost, no copy)
+     pub fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
+         unsafe { &*(c as *const crate::gen_ixheaacd_ref::offset_lengths as *const Self) }
+     }
+
+     /// Create from mutable C struct reference (zero-cost, no copy)
+     pub fn from_c_mut(c: &mut crate::gen_ixheaacd_ref::offset_lengths) -> &mut Self {
+         unsafe { &mut *(c as *mut crate::gen_ixheaacd_ref::offset_lengths as *mut Self) }
+     }
+ }
+
+ const _: () = {  // Safety: OffsetLengths has #[repr(C)] and identical layout
+     assert!(mem::size_of::<OffsetLengths>() == mem::size_of::<crate::gen_ixheaacd_ref::offset_lengths>());
+     assert!(mem::align_of::<OffsetLengths>() == mem::align_of::<crate::gen_ixheaacd_ref::offset_lengths>());
+ };
+
+// ============================================================================
+// Function stubs from ixheaacd_vec_baisc_ops.h (in order)
+// ============================================================================
+
+/// Combine FAC (Forward Aliasing Cancellation) data
+///
+/// C signature:
+/// ```c
+/// VOID ixheaacd_combine_fac(WORD32 *src1, WORD32 *src2, WORD32 *dest, WORD32 len,
+///                           WORD8 shift1, WORD8 shift2);
+/// ```
+pub fn combine_fac(src1: &[i32], src2: &[i32], dest: &mut [i32], shift1: i8, shift2: i8) 
+{
+    assert_eq!(src1.len(), src2.len(), "src1 and src2 must have same length");
+    assert_eq!(src1.len(), dest.len(), "src1 and dest must have same length");
+
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_combine_fac(
+            src1.as_ptr() as *mut i32,
+            src2.as_ptr() as *mut i32,
+            dest.as_mut_ptr(),
+            dest.len() as i32,
+            shift1,
+            shift2,
+        );
+    }
+}
+
+/// Windowing function for long blocks, variant 1
+///
+/// C signature:
+/// ```c
+/// WORD8 ixheaacd_windowing_long1(WORD32 *src1, WORD32 *src2,
+///                                const WORD32 *win_fwd, const WORD32 *win_rev,
+///                                WORD32 *dest, WORD32 vlen, WORD8 shift1,
+///                                WORD8 shift2);
+/// ```
+pub fn windowing_long1(src1: &mut [i32], src2: &mut [i32],
+            win_fwd: &[i32], win_rev: &[i32],
+            dest: &mut [i32],
+            vlen: i32,
+            shift1: i8, shift2: i8) -> i8 
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
+            src1.as_mut_ptr(),
+            src2.as_mut_ptr(),
+            win_fwd.as_ptr(),
+            win_rev.as_ptr(),
+            dest.as_mut_ptr(),
+            vlen,
+            shift1,
+            shift2,
+        )
+    }
+}
+
+/// Windowing function for long blocks, variant 2
+///
+/// C signature:
+/// ```c
+/// WORD8 ixheaacd_windowing_long2(WORD32 *src1, const WORD32 *win_fwd,
+///                                WORD32 *fac_data_out, WORD32 *over_lap,
+///                                WORD32 *p_out_buffer,
+///                                offset_lengths *ixheaacd_drc_offset,
+///                                WORD8 shift1, WORD8 shift2, WORD8 shift3);
+/// ```
+pub fn windowing_long2(src1: &mut [i32], win_fwd: &[i32],
+            fac_data_out: &mut [i32], over_lap: &mut [i32],
+            p_out_buffer: &mut [i32],
+            ixheaacd_drc_offset: &mut OffsetLengths,
+            shift1: i8, shift2: i8, shift3: i8) -> i8 
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
+            src1.as_mut_ptr(),
+            win_fwd.as_ptr(),
+            fac_data_out.as_mut_ptr(),
+            over_lap.as_mut_ptr(),
+            p_out_buffer.as_mut_ptr(),
+            ixheaacd_drc_offset.as_c_mut(),
+            shift1,
+            shift2,
+            shift3,
+        )
+    }
+}
+
+/// Windowing function for long blocks, variant 3
+///
+/// C signature:
+/// ```c
+/// WORD8 ixheaacd_windowing_long3(WORD32 *src1, const WORD32 *win_fwd,
+///                                WORD32 *over_lap, WORD32 *p_out_buffer,
+///                                const WORD32 *win_rev,
+///                                offset_lengths *ixheaacd_drc_offset,
+///                                WORD8 shift1, WORD8 shift2);
+/// ```
+pub fn windowing_long3(src1: &mut [i32], win_fwd: &[i32],
+            over_lap: &mut [i32], p_out_buffer: &mut [i32],
+            win_rev: &[i32],
+            ixheaacd_drc_offset: &mut OffsetLengths,
+            shift1: i8, shift2: i8) -> i8 
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
+            src1.as_mut_ptr(),
+            win_fwd.as_ptr(),
+            over_lap.as_mut_ptr(),
+            p_out_buffer.as_mut_ptr(),
+            win_rev.as_ptr(),
+            ixheaacd_drc_offset.as_c_mut(),
+            shift1,
+            shift2,
+        )
+    }
+}
+
+/// Windowing function for short blocks, variant 1
+///
+/// C signature:
+/// ```c
+/// VOID ixheaacd_windowing_short1(WORD32 *src1, WORD32 *src2, WORD32 *fp,
+///                                offset_lengths *ixheaacd_drc_offset,
+///                                WORD8 shiftp, WORD8 shift_olap);
+/// ```
+pub fn windowing_short1(src1: &mut [i32], src2: &mut [i32], fp: &mut [i32],
+            ixheaacd_drc_offset: &mut OffsetLengths,
+            shiftp: i8, shift_olap: i8)
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
+            src1.as_mut_ptr(),
+            src2.as_mut_ptr(),
+            fp.as_mut_ptr(),
+            ixheaacd_drc_offset.as_c_mut(),
+            shiftp,
+            shift_olap,
+        );
+    }
+}
+
+/// Windowing function for short blocks, variant 2
+///
+/// C signature:
+/// ```c
+/// VOID ixheaacd_windowing_short2(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
+///                                offset_lengths *ixheaacd_drc_offset,
+///                                WORD8 shiftp, WORD8 shift_olap);
+/// ```
+pub fn windowing_short2(src1: &mut [i32], win_fwd: &mut [i32], fp: &mut [i32],
+            ixheaacd_drc_offset: &mut OffsetLengths,
+            shiftp: i8, shift_olap: i8)
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
+            src1.as_mut_ptr(),
+            win_fwd.as_mut_ptr(),
+            fp.as_mut_ptr(),
+            ixheaacd_drc_offset.as_c_mut(),
+            shiftp,
+            shift_olap,
+        );
+    }
+}
+
+/// Windowing function for short blocks, variant 3
+///
+/// C signature:
+/// ```c
+/// WORD8 ixheaacd_windowing_short3(WORD32 *src1, WORD32 *win_rev, WORD32 *fp,
+///                                 WORD32 nshort, WORD8 shiftp, WORD8 shift_olap);
+/// ```
+pub fn windowing_short3(src1: &mut [i32], win_rev: &mut [i32], fp: &mut [i32],
+    nshort: i32,
+    shiftp: i8,
+    shift_olap: i8,
+) -> i8 {
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_short3(
+            src1.as_mut_ptr(),
+            win_rev.as_mut_ptr(),
+            fp.as_mut_ptr(),
+            nshort,
+            shiftp,
+            shift_olap,
+        )
+    }
+}
+
+/// Windowing function for short blocks, variant 4
+///
+/// C signature:
+/// ```c
+/// WORD8 ixheaacd_windowing_short4(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
+///                                 WORD32 *win_fwd1, WORD32 nshort, WORD32 flag,
+///                                 WORD8 shiftp, WORD8 shift_olap, WORD8 output_q);
+/// ```
+pub fn windowing_short4(src1: &mut [i32], win_fwd: &mut [i32], fp: &mut [i32],
+            win_fwd1: &mut [i32],
+    nshort: i32,
+    flag: i32,
+    shiftp: i8,
+    shift_olap: i8,
+    output_q: i8,
+) -> i8 
+{
+    unsafe {
+        crate::gen_ixheaacd_ref::ixheaacd_windowing_short4(
+            src1.as_mut_ptr(),
+            win_fwd.as_mut_ptr(),
+            fp.as_mut_ptr(),
+            win_fwd1.as_mut_ptr(),
+            nshort,
+            flag,
+            shiftp,
+            shift_olap,
+            output_q,
+        )
+    }
+}
+
+/// Scale down/up audio samples between Q-formats
+///
+/// C signature:
+/// ```c
+/// VOID ixheaacd_scale_down(WORD32 *dest, WORD32 *src, WORD32 len, WORD8 shift1,
+///                          WORD8 shift2);
+/// ```
 pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
@@ -30,6 +303,13 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 
 }
 
+/// Scale down/up audio samples between Q-formats
+///
+/// C signature:
+/// ```c
+/// VOID ixheaacd_scale_down_adj(WORD32 *dest, WORD32 *src, WORD32 len,
+///                          WORD8 shift1, WORD8 shift2);
+/// ```
 pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
@@ -58,6 +338,7 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 
 /// Saturating left shift for 32-bit signed integers
 #[inline]
+#[cfg(not(feature = "fallback"))]
 fn shl32_sat(a: i32, b: u32) -> i32 
 {
     let max = i32::MAX >> b;

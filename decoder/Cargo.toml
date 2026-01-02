@@ -8,6 +8,7 @@ crate-type = ["staticlib", "rlib"]
 
 [features]
 fallback = [] # Stub all functions with legacy impl, for testing only
+intergation = []
 
 [dependencies]
 

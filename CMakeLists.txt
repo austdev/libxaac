@@ -16,10 +16,10 @@ include("${XAAC_ROOT}/cmake/utils.cmake")
 # Determine Rust build profile based on CMake build type
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(RUST_PROFILE "debug")
-    set(CARGO_CMD cargo build --target-dir "${CMAKE_CURRENT_BINARY_DIR}")
+    set(CARGO_CMD cargo build -F intergation --target-dir "${CMAKE_CURRENT_BINARY_DIR}")
 else()
     set(RUST_PROFILE "release")
-    set(CARGO_CMD cargo build --release --target-dir "${CMAKE_CURRENT_BINARY_DIR}")
+    set(CARGO_CMD cargo build -F intergation --target-dir "${CMAKE_CURRENT_BINARY_DIR} --release")
 endif()
 
 if(RC_FALLBACK)
