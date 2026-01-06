@@ -5,10 +5,10 @@ pub mod ixheaacd;
 mod gen_ixheaacd_ref;
 
 
-#[cfg(all(feature = "fallback", feature = "intergation"))]
+#[cfg(all(feature = "fallback", feature = "integration"))]
 compile_error!("features \"fallback\" and \"intergation\" cannot be enabled at the same time");
 
-#[cfg(feature = "intergation")]
+#[cfg(feature = "integration")]
 mod integration_test {
 
     use crate::gen_ixheaacd_ref::*;

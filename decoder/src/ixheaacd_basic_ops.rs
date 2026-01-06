@@ -18,25 +18,30 @@ const ADJ_SCALE: i32 = 11;
      pub n_short: i32,       // Short block length (1/8 of frame)
  }
 
+ #[allow(dead_code)]
  impl OffsetLengths {
 
      /// Borrow as C struct (zero-cost, no copy)
-     pub fn as_c_ref(&self) -> &crate::gen_ixheaacd_ref::offset_lengths {
+     unsafe fn as_c_ref(&self) -> &crate::gen_ixheaacd_ref::offset_lengths {
          unsafe { &*(self as *const Self as *const crate::gen_ixheaacd_ref::offset_lengths) }
      }
 
      /// Borrow mutably as C struct (zero-cost, no copy)
-     pub fn as_c_mut(&mut self) -> &mut crate::gen_ixheaacd_ref::offset_lengths {
-         unsafe { &mut *(self as *mut Self as *mut crate::gen_ixheaacd_ref::offset_lengths) }
+    #[allow(invalid_reference_casting)]
+     unsafe fn as_c_mut(&self) -> &mut crate::gen_ixheaacd_ref::offset_lengths {
+         unsafe {
+            let ptr = self as *const Self as *const crate::gen_ixheaacd_ref::offset_lengths;
+            &mut *(ptr as *mut crate::gen_ixheaacd_ref::offset_lengths)
+            }
      }
 
      /// Create from C struct reference (zero-cost, no copy)
-     pub fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
+     unsafe fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
          unsafe { &*(c as *const crate::gen_ixheaacd_ref::offset_lengths as *const Self) }
      }
 
      /// Create from mutable C struct reference (zero-cost, no copy)
-     pub fn from_c_mut(c: &mut crate::gen_ixheaacd_ref::offset_lengths) -> &mut Self {
+     unsafe fn from_c_mut(c: &mut crate::gen_ixheaacd_ref::offset_lengths) -> &mut Self {
          unsafe { &mut *(c as *mut crate::gen_ixheaacd_ref::offset_lengths as *mut Self) }
      }
  }
@@ -50,14 +55,25 @@ const ADJ_SCALE: i32 = 11;
 // Function stubs from ixheaacd_vec_baisc_ops.h (in order)
 // ============================================================================
 
-/// Combine FAC (Forward Aliasing Cancellation) data
+/// Combines Forward Aliasing Cancellation (FAC) data by adding two sources with Q-format alignment.
 ///
-/// C signature:
+/// # Q-Format Handling
+/// - If `shift2 > shift1`: Right-shift src2 before adding
+/// - If `shift2 < shift1`: Left-shift src2 with saturation before adding
+/// - Result has `shift1` precision
+///
+/// # C signature
 /// ```c
 /// VOID ixheaacd_combine_fac(WORD32 *src1, WORD32 *src2, WORD32 *dest, WORD32 len,
-///                           WORD8 shift1, WORD8 shift2);
+///                           WORD8 output_q, WORD8 fac_q);
 /// ```
-pub fn combine_fac(src1: &[i32], src2: &[i32], dest: &mut [i32], shift1: i8, shift2: i8) 
+pub fn combine_fac(
+    src1: &[i32],      // First input buffer (overlap data)
+    src2: &[i32],      // Second input buffer (FAC data)
+    dest: &mut [i32],  // Output buffer for combined result
+    shift1: i8,        // Q-format of output/src1
+    shift2: i8,        // Q-format of FAC data (src2)
+)
 {
     assert_eq!(src1.len(), src2.len(), "src1 and src2 must have same length");
     assert_eq!(src1.len(), dest.len(), "src1 and dest must have same length");
@@ -74,25 +90,47 @@ pub fn combine_fac(src1: &[i32], src2: &[i32], dest: &mut [i32], shift1: i8, shi
     }
 }
 
-/// Windowing function for long blocks, variant 1
+/// Performs overlap-add synthesis for long IMDCT blocks with different Q-formats
+/// for current and overlap data.
 ///
-/// C signature:
+/// # Returns
+/// Output Q-format (min of shift1, shift2)
+///
+/// # Algorithm
+/// Processes `vlen/2` samples:
+/// - `dest[i] = src1[i] * win_fwd[i] + src2[i] * win_rev[i]` (Q-aligned)
+/// - `dest[vlen-i-1] = -src1[i] * win_rev[i] + src2[vlen-i-1] * win_fwd[i]` (mirrored)
+///
+/// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_long1(WORD32 *src1, WORD32 *src2,
 ///                                const WORD32 *win_fwd, const WORD32 *win_rev,
 ///                                WORD32 *dest, WORD32 vlen, WORD8 shift1,
 ///                                WORD8 shift2);
 /// ```
-pub fn windowing_long1(src1: &mut [i32], src2: &mut [i32],
-            win_fwd: &[i32], win_rev: &[i32],
-            dest: &mut [i32],
-            vlen: i32,
-            shift1: i8, shift2: i8) -> i8 
+pub fn windowing_long1(
+    src1: &[i32],      // Current IMDCT output (first half)
+    src2: &[i32],      // Current IMDCT output (second half)
+    win_fwd: &[i32],   // Forward window coefficients (vlen/2 samples)
+    win_rev: &[i32],   // Reverse window coefficients (vlen/2 samples, descending)
+    dest: &mut [i32],  // Output buffer (vlen samples)
+    vlen: i32,         // Vector length (total samples to process)
+    shift1: i8,        // Q-format of src1 (current IMDCT)
+    shift2: i8,        // Q-format of src2 (overlap buffer)
+) -> i8
 {
+    let vlen_u = vlen as usize;
+    assert!(vlen >= 0 && vlen % 2 == 0, "vlen must be non-negative and even");
+    assert!(src1.len() >= vlen_u / 2, "src1 must have at least vlen/2 samples");
+    assert!(src2.len() >= vlen_u, "src2 must have at least vlen samples");
+    assert!(win_fwd.len() >= vlen_u / 2, "win_fwd must have at least vlen/2 samples");
+    assert!(win_rev.len() >= vlen_u / 2, "win_rev must have at least vlen/2 samples");
+    assert!(dest.len() >= vlen_u, "dest must have at least vlen samples");
+
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
-            src1.as_mut_ptr(),
-            src2.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
+            src2.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             win_rev.as_ptr(),
             dest.as_mut_ptr(),
@@ -103,28 +141,50 @@ pub fn windowing_long1(src1: &mut [i32], src2: &mut [i32],
     }
 }
 
-/// Windowing function for long blocks, variant 2
+/// Handles long block windowing when transitioning from short to long blocks,
+/// incorporating FAC data.
 ///
-/// C signature:
+/// # Returns
+/// Output Q-format
+///
+/// # Frame Regions
+/// Controlled by `ixheaacd_drc_offset`:
+/// 1. **Flat left** `[0 .. n_flat_ls + lfac)`: Copy overlap buffer
+/// 2. **Transition** `[n_flat_ls + lfac .. n_flat_ls + n_trans_ls)`: Windowed IMDCT + FAC
+/// 3. **Flat middle** `[n_flat_ls + n_trans_ls .. n_flat_ls + 3*lfac)`: Direct IMDCT + FAC
+/// 4. **Right half** `[n_flat_ls + 3*lfac .. n_long)`: Negated IMDCT only
+///
+/// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_long2(WORD32 *src1, const WORD32 *win_fwd,
 ///                                WORD32 *fac_data_out, WORD32 *over_lap,
 ///                                WORD32 *p_out_buffer,
 ///                                offset_lengths *ixheaacd_drc_offset,
-///                                WORD8 shift1, WORD8 shift2, WORD8 shift3);
+///                                WORD8 shiftp, WORD8 shift_olap, WORD8 fac_q);
 /// ```
-pub fn windowing_long2(src1: &mut [i32], win_fwd: &[i32],
-            fac_data_out: &mut [i32], over_lap: &mut [i32],
-            p_out_buffer: &mut [i32],
-            ixheaacd_drc_offset: &mut OffsetLengths,
-            shift1: i8, shift2: i8, shift3: i8) -> i8 
+pub fn windowing_long2(
+    src1: &[i32],                        // Current IMDCT output (long block)
+    win_fwd: &[i32],                     // Forward window coefficients
+    fac_data_out: &[i32],                // FAC transition data
+    over_lap: &[i32],                    // Overlap buffer from previous frame
+    p_out_buffer: &mut [i32],            // Output buffer (n_long samples)
+    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_trans_ls, n_long)
+    shift1: i8,                          // Q-format of current IMDCT (src1)
+    shift2: i8,                          // Q-format of overlap buffer
+    shift3: i8,                          // Q-format of FAC data
+) -> i8
 {
+    let n_long = ixheaacd_drc_offset.n_long as usize;
+    assert!(p_out_buffer.len() >= n_long, "output buffer must have at least n_long samples");
+    assert!(over_lap.len() >= (ixheaacd_drc_offset.n_flat_ls + ixheaacd_drc_offset.lfac) as usize, "overlap buffer too small");
+    assert!(src1.len() >= n_long / 2, "src1 must have at least n_long/2 samples");
+
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
-            src1.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
-            fac_data_out.as_mut_ptr(),
-            over_lap.as_mut_ptr(),
+            fac_data_out.as_ptr() as *mut i32,
+            over_lap.as_ptr() as *mut i32,
             p_out_buffer.as_mut_ptr(),
             ixheaacd_drc_offset.as_c_mut(),
             shift1,
@@ -134,27 +194,47 @@ pub fn windowing_long2(src1: &mut [i32], win_fwd: &[i32],
     }
 }
 
-/// Windowing function for long blocks, variant 3
+/// Standard overlap-add for long blocks with flat and transition regions.
 ///
-/// C signature:
+/// # Returns
+/// Output Q-format
+///
+/// # Frame Regions
+/// 1. **Flat left** `[0 .. n_flat_ls)`: Copy overlap buffer
+/// 2. **First transition** `[n_flat_ls .. n_long/2)`: `src1[i] * win_fwd + overlap[i] * win_rev`
+/// 3. **Second transition** `[n_long/2 .. n_flat_ls + n_trans_ls)`: `-src1[n_long-i-1] * win_fwd + overlap[i] * win_rev`
+/// 4. **Right** `[n_flat_ls + n_trans_ls .. n_long)`: Negated IMDCT only
+///
+/// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_long3(WORD32 *src1, const WORD32 *win_fwd,
 ///                                WORD32 *over_lap, WORD32 *p_out_buffer,
 ///                                const WORD32 *win_rev,
 ///                                offset_lengths *ixheaacd_drc_offset,
-///                                WORD8 shift1, WORD8 shift2);
+///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
-pub fn windowing_long3(src1: &mut [i32], win_fwd: &[i32],
-            over_lap: &mut [i32], p_out_buffer: &mut [i32],
-            win_rev: &[i32],
-            ixheaacd_drc_offset: &mut OffsetLengths,
-            shift1: i8, shift2: i8) -> i8 
+pub fn windowing_long3(
+    src1: &[i32],                        // Current IMDCT output
+    win_fwd: &[i32],                     // Forward window coefficients
+    over_lap: &[i32],                    // Overlap buffer from previous frame
+    p_out_buffer: &mut [i32],            // Output buffer
+    win_rev: &[i32],                     // Reverse window coefficients
+    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
+    shift1: i8,                          // Q-format of current IMDCT
+    shift2: i8,                          // Q-format of overlap buffer
+) -> i8
 {
+    {
+        let off = ixheaacd_drc_offset;
+        assert!(src1.len() >= off.n_long as usize, "src1 must have at least n_long samples");
+        assert!(over_lap.len() >= (off.n_flat_ls + off.n_trans_ls) as usize, "overlap buffer too small");
+        assert!(p_out_buffer.len() >= off.n_long as usize, "output buffer must have at least n_long samples");
+    }
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
-            src1.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
-            over_lap.as_mut_ptr(),
+            over_lap.as_ptr() as *mut i32,
             p_out_buffer.as_mut_ptr(),
             win_rev.as_ptr(),
             ixheaacd_drc_offset.as_c_mut(),
@@ -164,22 +244,38 @@ pub fn windowing_long3(src1: &mut [i32], win_fwd: &[i32],
     }
 }
 
-/// Windowing function for short blocks, variant 1
+/// Initializes overlap buffer for short block processing, handling FAC region.
 ///
-/// C signature:
+/// # Processing
+/// - Adjusts first `lfac` samples of `fp` for Q-format alignment
+/// - If `n_short > lfac`: Fills `[lfac .. n_short)` with windowed IMDCT
+/// - Zeros out `[n_short .. n_flat_ls + lfac)`
+///
+/// # C signature
 /// ```c
 /// VOID ixheaacd_windowing_short1(WORD32 *src1, WORD32 *src2, WORD32 *fp,
 ///                                offset_lengths *ixheaacd_drc_offset,
 ///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
-pub fn windowing_short1(src1: &mut [i32], src2: &mut [i32], fp: &mut [i32],
-            ixheaacd_drc_offset: &mut OffsetLengths,
-            shiftp: i8, shift_olap: i8)
+pub fn windowing_short1(
+    src1: &[i32],                        // Current IMDCT output (short block)
+    src2: &[i32],                        // Window coefficients
+    fp: &mut [i32],                      // In/Out overlap buffer (modified in-place)
+    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_short)
+    shiftp: i8,                          // Q-format of current IMDCT
+    shift_olap: i8,                      // Q-format of overlap buffer (fp)
+)
 {
+    {
+        let off = ixheaacd_drc_offset;
+        assert_eq!(src1.len(), off.n_short as usize, "src1 must have n_short samples");
+        assert_eq!(src2.len(), off.n_short as usize, "src2 must have n_short samples");
+        assert!(fp.len() >= (off.n_flat_ls + off.lfac) as usize, "fp must have at least n_flat_ls + lfac samples");
+    }
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
-            src1.as_mut_ptr(),
-            src2.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
+            src2.as_ptr() as *mut i32,
             fp.as_mut_ptr(),
             ixheaacd_drc_offset.as_c_mut(),
             shiftp,
@@ -188,22 +284,38 @@ pub fn windowing_short1(src1: &mut [i32], src2: &mut [i32], fp: &mut [i32],
     }
 }
 
-/// Windowing function for short blocks, variant 2
+/// Performs overlap-add for short blocks with window application.
 ///
-/// C signature:
+/// # Processing
+/// - `fp[i] = src1[i] * win_fwd[i] + fp[i] * win_rev[i]` (Q-aligned)
+/// - `fp[n_short-i-1] = -src1[i] * win_rev[i] + fp[n_short-i-1] * win_fwd[i]`
+/// - Zeros out `[n_short .. n_flat_ls + n_short)`
+///
+/// # C signature
 /// ```c
 /// VOID ixheaacd_windowing_short2(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
 ///                                offset_lengths *ixheaacd_drc_offset,
 ///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
-pub fn windowing_short2(src1: &mut [i32], win_fwd: &mut [i32], fp: &mut [i32],
-            ixheaacd_drc_offset: &mut OffsetLengths,
-            shiftp: i8, shift_olap: i8)
+pub fn windowing_short2(
+    src1: &[i32],                        // Current IMDCT output (short block)
+    win_fwd: &[i32],                     // Window coefficients (n_short samples)
+    fp: &mut [i32],                      // In/Out overlap buffer
+    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
+    shiftp: i8,                          // Q-format of current IMDCT
+    shift_olap: i8,                      // Q-format of overlap buffer
+)
 {
+    {
+        let off = ixheaacd_drc_offset;
+        assert!(src1.len() >= (off.n_short as usize) / 2, "src1 must have at least n_short/2 samples");
+        assert!(win_fwd.len() >= off.n_short as usize, "win_fwd must have at least n_short samples");
+        assert!(fp.len() >= (off.n_flat_ls + off.n_short) as usize, "fp must have at least n_flat_ls + n_short samples");
+    }
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
-            src1.as_mut_ptr(),
-            win_fwd.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
+            win_fwd.as_ptr() as *mut i32,
             fp.as_mut_ptr(),
             ixheaacd_drc_offset.as_c_mut(),
             shiftp,
@@ -212,24 +324,39 @@ pub fn windowing_short2(src1: &mut [i32], win_fwd: &mut [i32], fp: &mut [i32],
     }
 }
 
-/// Windowing function for short blocks, variant 3
+/// Final windowing stage for short blocks in EIGHT_SHORT_SEQUENCE mode.
 ///
-/// C signature:
+/// # Returns
+/// Output Q-format (min of shiftp, shift_olap)
+///
+/// # Processing
+/// Processes `n_short/2` samples using second half of src1:
+/// - `fp[i] = -src1[n_short/2-i-1] * win_rev + fp[i]` (Q-aligned)
+/// - `fp[n_short-i-1] = -src1[n_short/2-i-1] * win_fwd + fp[n_short-i-1]`
+///
+/// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_short3(WORD32 *src1, WORD32 *win_rev, WORD32 *fp,
 ///                                 WORD32 nshort, WORD8 shiftp, WORD8 shift_olap);
 /// ```
-pub fn windowing_short3(src1: &mut [i32], win_rev: &mut [i32], fp: &mut [i32],
-    nshort: i32,
-    shiftp: i8,
-    shift_olap: i8,
-) -> i8 {
+pub fn windowing_short3(
+    src1: &[i32],      // Current IMDCT output (second half used: `[n_short/2 .. n_short)`)
+    win_fwd: &[i32],   // Reverse window coefficients
+    fp: &mut [i32],    // In/Out overlap buffer
+    shiftp: i8,        // Q-format of current IMDCT
+    shift_olap: i8,    // Q-format of overlap buffer
+) -> i8
+{
+    let n_short = src1.len();
+    assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
+    assert_eq!(n_short, fp.len(), "overlap buffer must have same length");
     unsafe {
+        let win_rev = win_fwd.as_ptr().add(n_short - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short3(
-            src1.as_mut_ptr(),
-            win_rev.as_mut_ptr(),
+            src1.as_ptr() as *mut i32,
+            win_rev as *mut i32,
             fp.as_mut_ptr(),
-            nshort,
+            n_short as i32,
             shiftp,
             shift_olap,
         )
@@ -238,7 +365,34 @@ pub fn windowing_short3(src1: &mut [i32], win_rev: &mut [i32], fp: &mut [i32],
 
 /// Windowing function performs overlap-add synthesis with windowing for short IMDCT blocks in AAC's
 ///  EIGHT_SHORT_SEQUENCE mode, ensuring smooth transitions between consecutive audio frames.
-/// C signature:
+///
+/// # Algorithm
+/// 
+/// if (shift_olap > output_q):
+///   Scale DOWN overlap buffer to match output_q
+///   return output_q
+/// else:
+///    Scale DOWN output to match shift_olap
+///    return shift_olap
+///
+/// **Stage 1: First Half Windowing** `[0 .. n_short/2)`
+/// 
+/// - Reads second half of src1: `src1[n_short/2 + i]`
+/// - Applies forward/reverse windows
+/// - Updates first half and mirror positions of `fp`
+/// - `fp[i] = src1[n_short/2 + i] * win_fwd[i] + fp[i]` (Q-aligned)
+/// 
+/// **Stage 2: Second Half Processing** `[n_short/2 .. n_short)` - Controlled by `windowed_flag`
+/// 
+/// **If `windowed_flag == true`:**
+/// - Applies backward window using `win_fwd1` (reverse coefficients)
+/// - `fp[i + n_short/2] = -src1[n_short - i - 1] * win_fwd1 + fp[i + n_short/2]`
+/// 
+/// **If `windowed_flag == false`:**
+/// - Direct negated copy without windowing
+/// - `fp[i + n_short/2] = -src1[n_short - i - 1] + fp[i + n_short/2]`
+/// 
+/// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_short4(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
 ///                                 WORD32 *win_fwd1, WORD32 nshort, WORD32 flag,
@@ -373,11 +527,8 @@ mod tests {
     // ============================================================================
 
     // Helper function to create simple sine-like window coefficients
-    fn create_test_windows() -> (Vec<i32>, Vec<i32>) {
-        (
-            vec![13176960, 302060768, 585449152, 858185984, 1115308543, 1352137343, 1564364543, 1748129023, 1900087039, 2017472895, 2098151679, 2140654591],
-            vec![13176960, 302060768, 585449152, 858185984, 1115308543, 1352137343, 1564364543, 1748129023, 1900087039, 2017472895, 2098151679, 2140654591],
-        )
+    fn create_test_windows() -> Vec<i32> {
+        vec![13176960, 302060768, 585449152, 858185984, 1115308543, 1352137343, 1564364543, 1748129023, 1900087039, 2017472895, 2098151679, 2140654591]
     }
 
     // ============================================================================
@@ -387,7 +538,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch1_flag1() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![21309976; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -407,7 +559,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch1_flag0() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![4352798; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -427,7 +580,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch2_flag1() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![-6177088; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -447,7 +601,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch2_flag0() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![162292782; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -468,7 +623,8 @@ mod tests {
     fn test_windowing_short4_equal_q_formats() {
         // shift_olap == output_q (boundary condition)
         let src1 = vec![1000; 12];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![100; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -484,7 +640,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_zero_src() {
         let src1 = vec![0; 12];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![100; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -500,7 +657,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_zero_fp() {
         let src1 = vec![1000; 12];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![0; 2 * src1.len()];
         
         let result_q = windowing_short4(
@@ -516,7 +674,8 @@ mod tests {
     #[test]
     fn test_windowing_short4_large_shift_difference() {
         let src1 = vec![1000; 12];
-        let (win_fwd, win_rev1) = create_test_windows();
+        let win_fwd = create_test_windows();
+        let win_rev1 = create_test_windows();
         let mut fp = vec![100; 2 * src1.len()];
         
         // Large shift difference: shift_olap - output_q = 8

@@ -1,0 +1,49 @@
+                                      1. Cargo Convention & Special Treatment
+
+Rust's Cargo build system has special handling for the benches/ directory:
+
+
+ project/
+ ├── src/           # Library code (compiled once)
+ ├── tests/         # Integration tests (each file = separate binary)
+ ├── benches/       # Benchmarks (each file = separate binary)
+ └── examples/      # Example programs
+
+
+Key differences:
+
+
+  Location   Compilation          Purpose             Run Command
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  src/       Library crate        Production code     Part of cargo build
+  tests/     Test binaries        Integration tests   cargo test
+  benches/   Benchmark binaries   Performance tests   cargo bench
+
+
+                                           2. Separate Compilation Model
+
+When you place benchmarks in benches/:
+
+
+ [[bench]]
+ name = "scale_down_bench"
+ harness = false  # Use custom benchmark framework (Divan)
+
+
+Cargo compiles them as separate executables:
+
+
+ target/
+ └── release/
+     └── deps/
+         ├── libdecoder.rlib              # Your library
+         └── scale_down_bench-<hash>      # Benchmark executable
+
+
+Benefits:
+
+ • ✅ Benchmarks don't increase library compilation time
+ • ✅ Benchmark dependencies (Divan) don't pollute library deps
+ • ✅ Can have multiple benchmark files
+ • ✅ Each benchmark is independently compiled and run
+

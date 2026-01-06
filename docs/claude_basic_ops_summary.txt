@@ -1,0 +1,44 @@
+  Summary
+
+  The document provides detailed parameter documentation for all 10 functions:
+
+  Windowing Functions (AAC overlap-add synthesis):
+  1. windowing_long1-3 - Long block processing with different transition scenarios
+  2. windowing_short1-4 - Short block processing for EIGHT_SHORT_SEQUENCE mode
+  3. combine_fac - Forward Aliasing Cancellation data combination
+
+  Q-Format Utilities:
+  - scale_down - Convert between fixed-point precisions with saturation
+  - scale_down_adj - Same with bias adjustment (+11)
+
+  Key Findings Using windowing_short4 as Example:
+
+  Critical Parameter Transformation (C → Rust):
+
+  win_fwd1 Parameter Gotcha:
+  - C: Passes pointer to END of array: &window[n_short-1], then decrements (win_fwd1--)
+  - Rust: Passes base array, computes offset internally:
+  let win_fwd1 = win_rev1.as_ptr().add(n_short - 1);
+
+  Type Safety Improvements:
+  - WORD32 flag → bool windowed_flag (semantic clarity)
+  - Implicit length from slices (eliminates nshort parameter at call sites)
+  - Const correctness: Only fp is mutable, inputs are immutable references
+
+  Three-Way Q-Format Handling:
+
+  windowing_short4 manages three different precisions simultaneously:
+  - shiftp: Current IMDCT precision (e.g., Q15)
+  - shift_olap: Overlap buffer precision (e.g., Q14)
+  - output_q: Target output precision (e.g., Q12)
+
+  Returns the achieved Q-format (not always the requested one).
+
+  Common Patterns Identified:
+
+  1. In/Out Buffers: fp (overlap) parameters carry state between frames
+  2. Frame Geometry: offset_lengths struct controls regional processing (flat/transition zones)
+  3. Saturation Arithmetic: All operations prevent overflow
+  4. Window Coefficients: Typically Q31 format (0x7FFFFFFF = 1.0)
+
+  The document includes detailed parameter tables, algorithm descriptions, and call site examples for each function.

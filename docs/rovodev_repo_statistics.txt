@@ -1,0 +1,92 @@
+================================================================================
+        xHE-AAC CODEC REPOSITORY STATISTICS SUMMARY
+================================================================================
+
+FILE TYPE SUMMARY
+-----------------
+C Source Files (.c):        301 files      (246,189 lines)
+C Header Files (.h):        330 files      (30,205 lines)
+Assembly Files (.s):        80 files       (25,839 lines)
+Total:                      711 files      (302,233 lines)
+
+AVERAGES
+--------
+Average lines per C file:   817.9 lines
+Average lines per H file:   91.53 lines
+Average lines per S file:   322.99 lines
+
+CODE DISTRIBUTION
+-----------------
+C Source Files:             81.46%
+C Header Files:             9.99%
+Assembly Files:             8.55%
+
+DIRECTORY BREAKDOWN
+-------------------
+Decoder directory:          153 C files (50.8%)
+Encoder directory:          137 C files (45.5%)
+Common directory:           3 C files
+Test directory:             7 C files
+
+TOP 10 LARGEST C SOURCE FILES
+------------------------------
+1.  15,083 lines - encoder\iusace_rom.c
+2.   8,286 lines - decoder\ixheaacd_mps_rom.c
+3.   4,678 lines - common\ixheaac_esbr_rom.c
+4.   4,455 lines - decoder\ixheaacd_rom.c
+5.   3,964 lines - encoder\ixheaace_rom.c
+6.   3,934 lines - encoder\ixheaace_api.c
+7.   3,779 lines - decoder\ixheaacd_api.c
+8.   3,727 lines - decoder\ixheaacd_sbr_rom.c
+3,449 lines - decoder\ixheaacd_aac_imdct.c
+10.  3,374 lines - encoder\drc_src\impd_drc_mux.c
+
+TOP 10 LARGEST HEADER FILES
+----------------------------
+1.   1,031 lines - decoder\ixheaacd_mps_dec.h
+2.     718 lines - decoder\ixheaacd_config.h
+3.     688 lines - decoder\drc_src\impd_drc_struct.h
+4.     628 lines - encoder\drc_src\impd_drc_uni_drc.h
+5.     436 lines - common\ixheaac_basic_ops32.h
+6.     397 lines - decoder\ixheaacd_mps_struct_def.h
+7.     393 lines - decoder\ixheaacd_mps_basic_op.h
+8.     368 lines - decoder\ixheaacd_ps_dec.h
+9.     350 lines - encoder\iusace_config.h
+10.    342 lines - decoder\ixheaacd_channelinfo.h
+
+TOP 5 LARGEST ASSEMBLY FILES
+-----------------------------
+1.   1,878 lines - decoder\armv8\ixheaacd_post_twiddle_overlap.s
+2.   1,186 lines - decoder\armv7\ixheaacd_post_twiddle_overlap.s
+3.   1,071 lines - decoder\armv7\ixheaacd_decorr_filter2.s
+4.     860 lines - decoder\armv7\ixheaacd_fft32x32_ld.s
+5.     856 lines - decoder\armv7\ixheaacd_sbr_imdct_using_fft.s
+
+C FILE SIZE DISTRIBUTION
+-------------------------
+Small (<200 lines):         61 files  (20.3%)
+Medium (200-499 lines):     99 files  (32.9%)
+Large (500-999 lines):      57 files  (18.9%)
+Very Large (>=1000 lines):  84 files  (27.9%)
+
+HEADER FILE SIZE DISTRIBUTION
+------------------------------
+Small (<100 lines):         245 files (74.2%)
+Medium (100-299 lines):     73 files  (22.1%)
+Large (300-499 lines):      8 files   (2.4%)
+Very Large (>=500 lines):   4 files   (1.2%)
+
+ASSEMBLY BY ARCHITECTURE
+-------------------------
+ARMv7:                      61 files  (17,957 lines)
+ARMv8:                      19 files  (7,882 lines)
+
+COMPONENT ANALYSIS
+------------------
+DRC (Decoder):              23 C files
+DRC (Encoder):              8 C files
+MPS (MPEG Surround):        39 C files
+SBR (Spectral Band Rep.):   38 C files
+PS (Parametric Stereo):     74 C files
+
+================================================================================

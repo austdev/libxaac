@@ -15,6 +15,7 @@
 ### Required Tools and Environment
 
 #### 1. Rust Toolchain
+
 - **Rust 2021+ edition** (currently using edition 2024)
 - **Cargo** build system
 - Install via: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
@@ -105,7 +106,7 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
 
 ### Phase 1: Isolate C Functions
 
-**Goal**: Identify self-contained C functions without dependencies on unmigrated ones. 
+**Goal**: Identify self-contained C functions without dependencies on unmigrated ones.
 
 **Selection Criteria:**
 
@@ -143,7 +144,7 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
         "ixheaacd_vec_baisc_ops.h",
     ];
  ```
- 
+
 Note, that ixheaac headers are not self-sufficient, so you may need to fix this by adding others includes to them.
 An output of Bindgen tool is saved into the next file:
 `decoder/src/gen_ixheaacd_ref.rs`
@@ -228,7 +229,29 @@ cargo test --features fallback
 
 **Goal**: Replace C implementation with idiomatic, safe Rust code while passing all tests.
 
-#### Step 4.1: Implement Rust Function
+#### Step 4.1: Use original C implementation
+
+```c
+VOID ixheaacd_scale_down(WORD32 *dest, WORD32 *src, WORD32 len, WORD8 shift1,
+                         WORD8 shift2) {
+  WORD32 i;
+  if (shift1 > shift2) {
+    for (i = 0; i < len; i++) {
+      *dest = *src >> (shift1 - shift2);
+      src++;
+      dest++;
+    }
+  } else {
+    for (i = 0; i < len; i++) {
+      *dest = ixheaac_shl32_sat((*src), (shift2 - shift1));
+      src++;
+      dest++;
+    }
+  }
+}
+```
+
+#### Step 4.2: Implement Rust Function
 
 ```rust
 pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
@@ -257,10 +280,9 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
         }
     }
 }
-
 ```
 
-#### Step 4.2: Verify Implementation
+#### Step 4.3: Verify Implementation
 
 ```bash
 # Run tests without fallback (pure Rust)
@@ -272,7 +294,7 @@ cargo test --features fallback
 
 **Both must pass identically!**
 
-#### Step 4.3: Publish Rust functions
+#### Step 4.4: Publish Rust functions
 
 Invoke new functions into `ixheaacd` module, so they could be called as `ixheaacd::scale_down` from the Rust code.
 
@@ -414,6 +436,7 @@ simd = []              # Enable SIMD optimizations (future)
 ```
 
 **Usage:**
+
 ```bash
 cargo build --features fallback
 cargo test --features "fallback,simd"
@@ -422,7 +445,7 @@ cargo test --features "fallback,simd"
 ### B. Common Type Mappings
 
 | C Type | Rust Type | Notes |
-|--------|-----------|-------|
+| ------ | --------- | ----- |
 | `WORD8` | `i8` | 8-bit signed |
 | `UWORD8` | `u8` | 8-bit unsigned |
 | `WORD16` | `i16` | 16-bit signed |
@@ -434,6 +457,7 @@ cargo test --features "fallback,simd"
 ### C. Bindgen Configuration Examples
 
 **Whitelist specific functions:**
+
 ```rust
 let bindings = bindgen::Builder::default()
     .header("ixheaacd.h")
@@ -444,6 +468,7 @@ let bindings = bindgen::Builder::default()
 ```
 
 **Blacklist problematic headers:**
+
 ```rust
 let bindings = bindgen::Builder::default()
     .header("ixheaacd.h")
@@ -479,7 +504,7 @@ fn c_implementation(bencher: Bencher) {
 **Current Status (as of 2025-12-30):**
 
 | Phase | Functions | Status |
-|-------|-----------|--------|
+| ----- | --------- | ------ |
 | **Phase 1: Initialization** | Core setup | ✅ Complete |
 | **Phase 2: DSP Primitives** | | 🔄 In Progress |
 | ├─ `scale_down` | Basic ops | ✅ Complete |
@@ -491,20 +516,23 @@ fn c_implementation(bencher: Bencher) {
 
 ### F. Troubleshooting
 
-**Issue: Bindgen fails to find headers**
+#### Issue: Bindgen fails to find headers
+
 ```bash
 # Solution: Set LIBCLANG_PATH
 export LIBCLANG_PATH=/usr/lib/llvm-14/lib
 cargo build
 ```
 
-**Issue: Tests fail with segmentation fault**
+#### Issue: Tests fail with segmentation fault
+
 ```rust
 // Solution: Check slice bounds
 assert_eq!(dest.len(), src.len());  // Always validate!
 ```
 
-**Issue: Performance regression in Rust version**
+#### Issue: Performance regression in Rust version
+
 ```bash
 # Solution: Profile and optimize
 cargo build --release
@@ -519,10 +547,10 @@ perf report
 
 ### H. External Resources
 
-- **Rust FFI Guide:** https://doc.rust-lang.org/nomicon/ffi.html
-- **Bindgen User Guide:** https://rust-lang.github.io/rust-bindgen/
-- **Cargo Book:** https://doc.rust-lang.org/cargo/
-- **Rust Performance Book:** https://nnethercote.github.io/perf-book/
+- **Rust FFI Guide:** <https://doc.rust-lang.org/nomicon/ffi.html>
+- **Bindgen User Guide:** <https://rust-lang.github.io/rust-bindgen/>
+- **Cargo Book:** <https://doc.rust-lang.org/cargo/>
+- **Rust Performance Book:** <https://nnethercote.github.io/perf-book/>
 
 ---
 

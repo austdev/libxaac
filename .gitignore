@@ -3,3 +3,4 @@ target/
 Cargo.lock
 gen_*.rs
 *.srctr*
+*.local.*
