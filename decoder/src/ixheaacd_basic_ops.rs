@@ -515,6 +515,244 @@ mod tests {
     use super::*;
 
     // ============================================================================
+    // windowing_short1() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_windowing_short1():
+    // - Branch 1: shift_olap > shiftp && n_short > lfac
+    // - Branch 2: shift_olap > shiftp && n_short <= lfac
+    // - Branch 3: shift_olap <= shiftp && n_short > lfac
+    // - Branch 4: shift_olap <= shiftp && n_short <= lfac
+    // ============================================================================
+
+    // Helper function to create simple sine-like window coefficients
+    fn create_test_window_len32() -> Vec<i32> {
+        vec![
+              13176960,  118530360,  223600288,  328129056,  431869696,  534568800,  635979456,  735858880, 
+             833964544,  930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623,
+            1527788543, 1599999871, 1668354303, 1732692863, 1792854655, 1848697855, 1900087039, 1946900095,
+            1989020799, 2026350591, 2058798975, 2086288895, 2108751615, 2126133375, 2138393343, 2145503615]
+    }
+
+    #[test]
+    fn test_windowing_short1_branch1_olap_nshort() {
+        // Branch 1: shift_olap > shiftp && n_short > lfac
+        let offset = OffsetLengths {
+            lfac: 24,
+            n_flat_ls: 104,
+            n_trans_ls: 48,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![134760976, 192459648, 235105440, 86985200, 147657648, 184622976, 138333184, 109944192, 46901072, 97105280, 163566848, 114981248, 77520880, 10512288, 14358304, -114643568,
+                -184019744, -157282624, -236088256, -106367824, -217254992, -100738448, 85402512, -105615168, 133200032, -163217168, -167557232, 294838336, 288447472, 175529072, 151728032, -17404576];
+        let src2 = create_test_window_len32();
+        let mut fp = vec![-206367421; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 12, 14);
+
+        let exp = vec![-51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -51591856, -101831409, -130530228, -176998598, -143449992, -85416335, -232768023, -191644966, -134636724, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    #[test]
+    fn test_windowing_short1_branch2_olap_lfac() {
+        // Branch 2: shift_olap > shiftp && n_short <= lfac
+        let offset = OffsetLengths {
+            lfac: 32,
+            n_flat_ls: 100,
+            n_trans_ls: 48,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
+        let src2 = create_test_window_len32();
+        let mut fp = vec![8000; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 12, 16);
+
+        let exp = vec![500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    #[test]
+    fn test_windowing_short1_branch3_shiftp_nshort() {
+        // Branch 3: shift_olap <= shiftp && n_short > lfac
+        let offset = OffsetLengths {
+            lfac: 16,
+            n_flat_ls: 104,
+            n_trans_ls: 48,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![-2231040, -1453504, -8470208, -6010560, -37089856, -63401792, -99061664, -49948160, -39689344, -36031552, -45139328, -22368544, 22745568, 33116832, 35384800, 2671072, -26372288, -35004416, -23028672, -3573056, -29113216, -45877920, -55658880, -59907872, -60211552, -77955136, -38060672, -21001088, 3338240, -24066816, -17012992, -15744480];
+        let src2 = create_test_window_len32();
+        let mut fp = vec![3000; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 16, 14);
+
+        let exp = vec![3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, -475072, -6590933, -6432018, -4588054, 4668667, 9714739, 7970152, 8995550, 11565621, 23368473, 15195871, 9008235, 1475538, 2096499, 361837, 557245, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    #[test]
+    fn test_windowing_short1_branch4_shiftp_lfac() {
+        // Branch 4: shift_olap <= shiftp && n_short <= lfac
+        let offset = OffsetLengths {
+            lfac: 64,
+            n_flat_ls: 112,
+            n_trans_ls: 32,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
+        let src2 = create_test_window_len32();
+        let mut fp = vec![68186432; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 18, 14);
+
+        let exp = vec![68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 68186432, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    // ============================================================================
+    // windowing_short2() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_windowing_short2():
+    // - Branch 1: shift_olap > shiftp
+    // - Branch 2: shift_olap <= shiftp
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_short2_branch1_olap_gt_shiftp() {
+        // Branch 1: shift_olap > shiftp
+        let offset = OffsetLengths {
+            lfac: 16,
+            n_flat_ls: 112,
+            n_trans_ls: 32,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![-2231040, -1453504, -8470208, -6010560, -37089856, -63401792, -99061664, -49948160, -39689344, -36031552, -45139328, -22368544, 22745568, 33116832, 35384800, 2671072, -26372288, -35004416, -23028672, -3573056, -29113216, -45877920, -55658880, -59907872, -60211552, -77955136, -38060672, -21001088, 3338240, -24066816, -17012992, -15744480];
+        let win_fwd = create_test_window_len32();
+        let mut fp = vec![-4606648; (offset.n_flat_ls + offset.n_short) as usize];
+
+        windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 16);
+
+        let exp = vec![-1164291, -1227015, -2022148, -2049287, -8577801, -16886583, -30423914, -18181968, -16457252, -16624037, -22513815, -12578718, 11823357, 18995818, 21757219, 986563, -2678918, -27099784, -26419778, -18997910, 18076546, 38309846, 31381830, 35534957, 45867854, 93132829, 60496805, 35801337, 5726182, 8266083, 1383785, 2221915, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    #[test]
+    fn test_windowing_short2_branch2_olap_le_shiftp() {
+        // Branch 2: shift_olap <= shiftp
+        let offset = OffsetLengths {
+            lfac: 16,
+            n_flat_ls: 112,
+            n_trans_ls: 32,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![134760976, 192459648, 235105440, 86985200, 147657648, 184622976, 138333184, 109944192, 46901072, 97105280, 163566848, 114981248, 77520880, 10512288, 14358304, -114643568,
+                -184019744, -157282624, -236088256, -106367824, -217254992, -100738448, 85402512, -105615168, 133200032, -163217168, -167557232, 294838336, 288447472, 175529072, 151728032, -17404576];
+        let win_fwd = create_test_window_len32();
+        let mut fp = vec![77680672; (offset.n_flat_ls + offset.n_short) as usize];
+
+        windowing_short2(&src1, &win_fwd, &mut fp, &offset, 15, 14);
+
+        let exp = vec![78022494, 82663254, 89148195, 82925160, 90314426, 97451604, 93782696, 90785407, 79531884, 89759479, 105866983, 94710820, 84407997, 63506111, 62464974, 16509658, 93299907, 44298694, 42572895, 12278814, -7652872, -33366586, -9316198, 8906737, -24297569, -42259905, -69162406, -56103025, -30838795, -108295746, -91534899, -66841714, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    #[test]
+    fn test_windowing_short2_equal_shifts() {
+        // Edge case: shift_olap == shiftp
+        let offset = OffsetLengths {
+            lfac: 16,
+            n_flat_ls: 112,
+            n_trans_ls: 32,
+            n_long: 256,
+            n_short: 32,
+        };
+        let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
+        let win_fwd = create_test_window_len32();
+        let mut fp = vec![68186432; (offset.n_flat_ls + offset.n_short) as usize];
+
+        windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 14);
+
+        let exp = vec![68815524, 80150639, 83706379, 82424917, 88945434, 63187846, 53941786, 25596480, 3686188, -46665091, -61902306, -60676730, -65208106, -103500210, -26636729, -16162386, 114153150, 133854672, 243349688, 211244031, 224459545, 250259313, 248120977, 162188201, 124885091, 53324918, 25379756, -95957079, -88989760, -146919800, -217288630, -112248544, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(fp, exp);
+    }
+
+    // ============================================================================
+    // windowing_short3() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_windowing_short3():
+    // - Branch 1: shift_olap > shiftp (returns shiftp)
+    // - Branch 2: shift_olap <= shiftp (returns shift_olap)
+    // ============================================================================
+
+    // Helper function to create simple sine-like window coefficients
+    fn create_test_window_len12() -> Vec<i32> {
+        vec![13176960, 302060768, 585449152, 858185984, 1115308543, 1352137343, 1564364543, 1748129023, 1900087039, 2017472895, 2098151679, 2140654591]
+    }
+
+    #[test]
+    fn test_windowing_short3_branch1_olap_gt_shiftp() {
+        // Branch 1: shift_olap > shiftp, returns shiftp
+        let src1 = vec![249141632, 241070784, 305427840, 231461440, 167675776, 119436992, 11057152, -54612032, -149492736, -159054784, -125548352, -13541312];
+        let win_fwd = create_test_window_len12();
+        let mut fp = vec![0; src1.len()];
+
+        let result_q = windowing_short3(&src1, &win_fwd, &mut fp, 14, 16);
+
+        let exp = vec![-119057180, -163823931, -217448539, -270241630, -196240300, -181490712, -156869043, -125201561, -122056293, -63101251, -23584941, -732866];
+        assert_eq!(fp, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_short3_branch2_olap_le_shiftp() {
+        // Branch 2: shift_olap <= shiftp, returns shift_olap
+        let src1 = vec![139012976, -43757040, -70552272, 1001600, -27581184, 209319392, -222776656, 17346800, 47883904, -90583664, 57344384, 10769696];
+        let win_fwd = create_test_window_len12();
+        let mut fp = vec![0; src1.len()];
+
+        let result_q = windowing_short3(&src1, &win_fwd, &mut fp, 17, 14);
+
+        let exp = vec![-26081719, 3368448, -117621, 7803054, 4452475, -12658244, -10940982, 2840685, 3524297, -34133, 484939, -160548];
+        assert_eq!(fp, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_short3_equal_shifts() {
+        // Edge case: shift_olap == shiftp
+        let src1 = vec![139012976, -43757040, -70552272, 1001600, -27581184, 209319392, -222776656, 17346800, 47883904, -90583664, 57344384, 10769696];
+        let win_fwd = create_test_window_len12();
+        let mut fp = vec![0; src1.len()];
+
+        let result_q = windowing_short3(&src1, &win_fwd, &mut fp, 15, 15);
+
+        let exp = vec![-208653751, 26947589, -940963, 62424436, 35619806, -101265950, -87527855, 22725481, 28194380, -273058, 3879514, -1284384];
+        assert_eq!(fp, exp);
+        assert_eq!(result_q, 15);
+    }
+
+    #[test]
+    fn test_windowing_short3_negative_values() {
+        // Test with negative src1 values
+        let src1 = vec![68698176, -64474464, -86033120, -17652736, 22920896, -164053840, -132149856, -86296016, 32181376, -56454480, -73557968, -100885984];
+        let win_fwd = create_test_window_len12();
+        let mut fp = vec![0; src1.len()];
+
+        let result_q = windowing_short3(&src1, &win_fwd, &mut fp, 14, 16);
+
+        let exp = vec![163532144, -22394358, 16584022, 76121844, 52484535, -50044149, -43254984, 33485200, 34380898, 4812506, -3224008, 1006634];
+        assert_eq!(fp, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    // ============================================================================
     // windowing_short4() tests
     // ============================================================================
     // Tests cover all code paths in ixheaacd_windowing_short4():
@@ -526,11 +764,6 @@ mod tests {
     // - Edge cases: saturation, zero values, max values
     // ============================================================================
 
-    // Helper function to create simple sine-like window coefficients
-    fn create_test_windows() -> Vec<i32> {
-        vec![13176960, 302060768, 585449152, 858185984, 1115308543, 1352137343, 1564364543, 1748129023, 1900087039, 2017472895, 2098151679, 2140654591]
-    }
-
     // ============================================================================
     // Branch 1: shift_olap > output_q, flag=1 (windowed)
     // ============================================================================
@@ -538,12 +771,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch1_flag1() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![21309976; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 15, 14, 12
         );
         
@@ -559,12 +791,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch1_flag0() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![4352798; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             false, 17, 16, 14
         );
         
@@ -580,12 +811,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch2_flag1() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![-6177088; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 16, 14, 15
         );
         
@@ -601,12 +831,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_branch2_flag0() {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![162292782; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             false, 14, 12, 15
         );
         
@@ -623,12 +852,11 @@ mod tests {
     fn test_windowing_short4_equal_q_formats() {
         // shift_olap == output_q (boundary condition)
         let src1 = vec![1000; 12];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 17, 15, 15
         );
         
@@ -640,12 +868,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_zero_src() {
         let src1 = vec![0; 12];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 18, 16, 14
         );
         
@@ -657,12 +884,11 @@ mod tests {
     #[test]
     fn test_windowing_short4_zero_fp() {
         let src1 = vec![1000; 12];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![0; 2 * src1.len()];
         
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 17, 16, 14
         );
         
@@ -674,13 +900,12 @@ mod tests {
     #[test]
     fn test_windowing_short4_large_shift_difference() {
         let src1 = vec![1000; 12];
-        let win_fwd = create_test_windows();
-        let win_rev1 = create_test_windows();
+        let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
         
         // Large shift difference: shift_olap - output_q = 8
         let result_q = windowing_short4(
-            &src1, &win_fwd, &mut fp, &win_rev1,
+            &src1, &win_fwd, &mut fp, &win_fwd,
             true, 21, 20, 12
         );
         
