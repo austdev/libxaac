@@ -6,7 +6,26 @@
 #[allow(dead_code)]
 const ADJ_SCALE: i32 = 11;
 
- use std::mem;
+use std::mem;
+
+// ============================================================================
+// Fixed-point DSP operations extension trait
+// ============================================================================
+
+/// Extension trait for fixed-point DSP operations on i32
+#[cfg(not(feature = "fallback"))]
+trait FixedPointOps {
+    /// Q31 fixed-point multiply: (a * b) >> 31
+    fn mult_shift_q31(self, other: Self) -> Self;
+}
+
+#[cfg(not(feature = "fallback"))]
+impl FixedPointOps for i32 {
+    #[inline]
+    fn mult_shift_q31(self, other: Self) -> Self {
+        ((self as i64 * other as i64) >> 31) as i32
+    }
+}
 
  #[repr(C)]  // remove this after migration
  #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -266,12 +285,16 @@ pub fn windowing_short1(
     shift_olap: i8,                      // Q-format of overlap buffer (fp)
 )
 {
-    {
-        let off = ixheaacd_drc_offset;
-        assert_eq!(src1.len(), off.n_short as usize, "src1 must have n_short samples");
-        assert_eq!(src2.len(), off.n_short as usize, "src2 must have n_short samples");
-        assert!(fp.len() >= (off.n_flat_ls + off.lfac) as usize, "fp must have at least n_flat_ls + lfac samples");
-    }
+    let off = ixheaacd_drc_offset;
+    let lfac = off.lfac as usize;
+    let n_short = off.n_short as usize;
+    let n_flat_ls = off.n_flat_ls as usize;
+
+    assert_eq!(src1.len(), n_short, "src1 must have n_short samples");
+    assert_eq!(src2.len(), n_short, "src2 must have n_short samples");
+    assert!(fp.len() >= n_flat_ls + lfac, "fp must have at least n_flat_ls + lfac samples");
+
+    #[cfg(feature = "fallback")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
             src1.as_ptr() as *mut i32,
@@ -281,6 +304,40 @@ pub fn windowing_short1(
             shiftp,
             shift_olap,
         );
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        if shift_olap > shiftp {
+            let shift = (shift_olap - shiftp) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+
+            // Scale down first lfac samples
+            for i in 0..lfac {
+                fp[i] >>= shift;
+            }
+            // If n_short > lfac, compute windowed IMDCT for [lfac..n_short)
+            if n_short > lfac {
+                for i in lfac..n_short {
+                    fp[i] = src1[n_short - i - 1].saturating_neg().mult_shift_q31(src2[i]);
+                }
+            }
+        } else {
+            let shift = (shiftp - shift_olap) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+
+            // If n_short > lfac, compute windowed IMDCT with shift for [lfac..n_short)
+            if n_short > lfac {
+                for i in lfac..n_short {
+                    fp[i] = src1[n_short - i - 1].saturating_neg().mult_shift_q31(src2[i]) >> shift;
+                }
+            }
+        }
+        // Zero out [n_short..n_flat_ls + lfac) or [lfac..n_flat_ls + lfac) if n_short <= lfac
+        let zero_start = if n_short > lfac { n_short } else { lfac };
+        for i in zero_start..(n_flat_ls + lfac) {
+            fp[i] = 0;
+        }
     }
 }
 
@@ -306,12 +363,15 @@ pub fn windowing_short2(
     shift_olap: i8,                      // Q-format of overlap buffer
 )
 {
-    {
-        let off = ixheaacd_drc_offset;
-        assert!(src1.len() >= (off.n_short as usize) / 2, "src1 must have at least n_short/2 samples");
-        assert!(win_fwd.len() >= off.n_short as usize, "win_fwd must have at least n_short samples");
-        assert!(fp.len() >= (off.n_flat_ls + off.n_short) as usize, "fp must have at least n_flat_ls + n_short samples");
-    }
+    let off = ixheaacd_drc_offset;
+    let n_short = off.n_short as usize;
+    let n_flat_ls = off.n_flat_ls as usize;
+
+    assert!(src1.len() >= n_short / 2, "src1 must have at least n_short/2 samples");
+    assert!(win_fwd.len() >= n_short, "win_fwd must have at least n_short samples");
+    assert!(fp.len() >= n_flat_ls + n_short, "fp must have at least n_flat_ls + n_short samples");
+
+    #[cfg(feature = "fallback")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
             src1.as_ptr() as *mut i32,
@@ -321,6 +381,45 @@ pub fn windowing_short2(
             shiftp,
             shift_olap,
         );
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        let half = n_short / 2;
+
+        if shift_olap > shiftp {
+            let shift = (shift_olap - shiftp) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+            
+            for i in 0..half {
+                let mirror = n_short - i - 1;
+                let win_fwd_i = win_fwd[i];
+                let win_rev_i = win_fwd[mirror];
+
+                fp[i] = src1[i].mult_shift_q31(win_fwd_i)
+                    .saturating_add(fp[i].mult_shift_q31(win_rev_i) >> shift);
+                fp[mirror] = src1[i].saturating_neg().mult_shift_q31(win_rev_i)
+                    .saturating_add(fp[mirror].mult_shift_q31(win_fwd_i) >> shift);
+            }
+        } else {
+            let shift = (shiftp - shift_olap) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+
+            for i in 0..half {
+                let mirror = n_short - i - 1;
+                let win_fwd_i = win_fwd[i];
+                let win_rev_i = win_fwd[mirror];
+
+                fp[i] = (src1[i].mult_shift_q31(win_fwd_i) >> shift)
+                    .saturating_add(fp[i].mult_shift_q31(win_rev_i));
+                fp[mirror] = (src1[i].saturating_neg().mult_shift_q31(win_rev_i) >> shift)
+                    .saturating_add(fp[mirror].mult_shift_q31(win_fwd_i));
+            }
+        }
+        // Zero out [n_short..n_flat_ls + n_short)
+        for i in n_short..(n_flat_ls + n_short) {
+            fp[i] = 0;
+        }
     }
 }
 
@@ -350,6 +449,8 @@ pub fn windowing_short3(
     let n_short = src1.len();
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
     assert_eq!(n_short, fp.len(), "overlap buffer must have same length");
+
+    #[cfg(feature = "fallback")]
     unsafe {
         let win_rev = win_fwd.as_ptr().add(n_short - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short3(
@@ -360,6 +461,41 @@ pub fn windowing_short3(
             shiftp,
             shift_olap,
         )
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        let half = n_short / 2;
+
+        if shift_olap > shiftp {
+            let shift = (shift_olap - shiftp) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+
+            for i in 0..half {
+                let mirror = n_short - i - 1;
+                let neg_src = src1[half - i - 1].saturating_neg();
+
+                fp[i] = neg_src.mult_shift_q31(win_fwd[n_short - 1 - i])
+                    .saturating_add(fp[i] >> shift);
+                fp[mirror] = neg_src.mult_shift_q31(win_fwd[i])
+                    .saturating_add(fp[mirror] >> shift);
+            }
+            shiftp
+        } else {
+            let shift = (shiftp - shift_olap) as u32;
+            assert!(shift < 32, "wrong Q-format parameters");
+
+            for i in 0..half {
+                let mirror = n_short - i - 1;
+                let neg_src = src1[half - i - 1].saturating_neg();
+
+                fp[i] = (neg_src.mult_shift_q31(win_fwd[n_short - 1 - i]) >> shift)
+                    .saturating_add(fp[i]);
+                fp[mirror] = (neg_src.mult_shift_q31(win_fwd[i]) >> shift)
+                    .saturating_add(fp[mirror]);
+            }
+            shift_olap
+        }
     }
 }
 
@@ -374,7 +510,7 @@ pub fn windowing_short3(
 /// else:
 ///    Scale DOWN output to match shift_olap
 ///    return shift_olap
-///
+/// 
 /// **Stage 1: First Half Windowing** `[0 .. n_short/2)`
 /// 
 /// - Reads second half of src1: `src1[n_short/2 + i]`
@@ -412,7 +548,9 @@ pub fn windowing_short4(
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
     assert_eq!(n_short, win_rev1.len(), "backward window must have same length");
     assert_eq!(n_short * 2, fp.len(), "overlap buffer must have double length");
+    assert!(shiftp >= output_q, "output_q must be min(shiftp, shift_olap)");
 
+    #[cfg(feature = "fallback")]
     unsafe {
         let src1 = src1.as_ptr();
         let win_fwd = win_fwd.as_ptr();
@@ -425,6 +563,91 @@ pub fn windowing_short4(
             n_short as i32,
             if windowed_flag { 1 } else { 0 },
             shiftp, shift_olap, output_q)
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        let half = n_short / 2;
+
+        if shift_olap > output_q {
+            let shift_p = (shiftp - output_q) as u32;
+            let shift_o = (shift_olap - output_q) as u32;
+            assert!(shift_o < 32, "wrong input/output Q-format");
+
+            // Stage 1: First half windowing [0..half)
+            for i in 0..half {
+                let src = src1[half + i];
+                let mirror = n_short - i - 1;
+
+                fp[i] = (src.mult_shift_q31(win_fwd[i]) >> shift_p)
+                        .saturating_add(fp[i]);
+                fp[mirror] = (src.saturating_neg().mult_shift_q31(win_fwd[mirror]) >> shift_p)
+                        .saturating_add(fp[mirror]);
+            }
+
+            // Stage 2: Second half processing [half..n_short)
+            if windowed_flag {
+                for j in 0..half {
+                    let fp_idx1 = n_short + j;
+                    let fp_idx2 = 2 * n_short - 1 - j;
+                    let neg_src = src1[half - 1 - j].saturating_neg();
+
+                    fp[fp_idx1] = (neg_src.mult_shift_q31(win_rev1[n_short - 1 - j]) >> shift_p)
+                            .saturating_add(fp[fp_idx1] >> shift_o);
+                    fp[fp_idx2] = (neg_src.mult_shift_q31(win_rev1[j]) >> shift_p)
+                            .saturating_add(fp[fp_idx2] >> shift_o);
+                }
+            } else {
+                for j in 0..half {
+                    let fp_idx1 = n_short + j;
+                    let fp_idx2 = 2 * n_short - 1 - j;
+                    let neg_src = src1[half - 1 - j].saturating_neg();
+
+                    fp[fp_idx1] = (neg_src >> shift_p).saturating_add(fp[fp_idx1] >> shift_o);
+                    fp[fp_idx2] = (neg_src >> shift_p).saturating_add(fp[fp_idx2] >> shift_o);
+                }
+            }
+            output_q
+        } else { // shift_olap <= output_q
+            let shift_p = (shiftp - shift_olap) as u32;
+            let shift_o = (output_q - shift_olap) as u32;
+            assert!(shift_o < 32, "wrong input/output Q-format");
+
+            // Stage 1: First half windowing [0..half)
+            for i in 0..half {
+                let src= src1[half + i];
+                let mirror = n_short - i - 1;
+
+                fp[i] = (src.mult_shift_q31(win_fwd[i]) >> shift_p)
+                        .saturating_add(fp[i] >> shift_o);
+                fp[mirror] = (src.saturating_neg().mult_shift_q31(win_fwd[n_short - 1 - i]) >> shift_p)
+                        .saturating_add(fp[mirror]);
+            }
+
+            // Stage 2: Second half processing [half..n_short)
+            if windowed_flag {
+                for j in 0..half {
+                    let fp_idx1 = n_short + j;
+                    let fp_idx2 = 2 * n_short - 1 - j;
+                    let neg_src = src1[half - 1 - j].saturating_neg();
+
+                    fp[fp_idx1] = (neg_src.mult_shift_q31(win_rev1[n_short - 1 - j]) >> shift_p)
+                            .saturating_add(fp[fp_idx1]);
+                    fp[fp_idx2] = (neg_src.mult_shift_q31(win_rev1[j]) >> shift_p)
+                            .saturating_add(fp[fp_idx2]);
+                }
+            } else {
+                for j in 0..half {
+                    let fp_idx1 = n_short + j;
+                    let fp_idx2 = 2 * n_short - 1 - j;
+                    let neg_src = src1[half - 1 - j].saturating_neg();
+
+                    fp[fp_idx1] = (neg_src >> shift_p).saturating_add(fp[fp_idx1]);
+                    fp[fp_idx2] = (neg_src >> shift_p).saturating_add(fp[fp_idx2]);
+                }
+            }
+            shift_olap
+        }
     }
 }
 
@@ -615,6 +838,70 @@ mod tests {
     }
 
     // ============================================================================
+    // windowing_short1() edge case tests - saturation and i32::MIN handling
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_short1_i32min_saturation() {
+        // Test negate_sat behavior: i32::MIN should become i32::MAX
+        let offset = OffsetLengths {
+            lfac: 8,
+            n_flat_ls: 24,
+            n_trans_ls: 16,
+            n_long: 64,
+            n_short: 16,
+        };
+        // Place i32::MIN in positions that will be negated
+        let src1 = vec![
+            1000, 2000, 3000, 4000, 5000, 6000, 7000, i32::MIN,
+            i32::MIN, 9000, 10000, 11000, 12000, 13000, 14000, 15000
+        ];
+        let src2 = vec![
+            13176960, 118530360, 223600288, 328129056, 431869696, 534568800, 635979456, 735858880,
+            833964544, 930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623
+        ];
+        let mut fp = vec![100; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 14, 16);
+
+        // First 8 samples (lfac) should be scaled down from 100 >> 2 = 25
+        for i in 0..8 {
+            assert_eq!(fp[i], 25, "fp[{}] should be 25", i);
+        }
+        // Samples 8..16 have windowed IMDCT with negate_sat
+        // fp[8] uses src1[16-8-1=7] which is i32::MIN, so negate_sat gives i32::MAX
+        // mult_shift_q31(i32::MAX, src2[8]) should give a large value
+        assert!(fp[8] > 0, "fp[8] with negated i32::MIN should be positive");
+    }
+
+    #[test]
+    fn test_windowing_short1_max_values_branch3() {
+        // Branch 3: shift_olap <= shiftp with max values
+        let offset = OffsetLengths {
+            lfac: 8,
+            n_flat_ls: 24,
+            n_trans_ls: 16,
+            n_long: 64,
+            n_short: 16,
+        };
+        let src1 = vec![i32::MAX / 2; 16];
+        let src2 = vec![i32::MAX / 4; 16];
+        let mut fp = vec![i32::MAX / 4; (offset.n_flat_ls + offset.lfac) as usize];
+
+        windowing_short1(&src1, &src2, &mut fp, &offset, 12, 16);
+
+        // First lfac samples unchanged
+        for i in 0..8 {
+            assert_eq!(fp[i], i32::MAX / 64, "fp[{}] should remain unchanged", i);
+        }
+        // Remaining should be windowed with shift
+        // negate_sat(i32::MAX) = -i32::MAX, then mult_shift_q31 then right shift
+        for i in 8..16 {
+            assert!(fp[i] < 0, "fp[{}] should be negative after negation", i);
+        }
+    }
+
+    // ============================================================================
     // windowing_short2() tests
     // ============================================================================
     // Tests cover all code paths in ixheaacd_windowing_short2():
@@ -684,6 +971,33 @@ mod tests {
     }
 
     // ============================================================================
+    // windowing_short2() edge case tests - saturation
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_short2_saturating_add_overflow() {
+        // Test saturating_add when mult results would overflow
+        let offset = OffsetLengths {
+            lfac: 8,
+            n_flat_ls: 24,
+            n_trans_ls: 16,
+            n_long: 64,
+            n_short: 16,
+        };
+        let src1 = vec![i32::MAX / 2; 8];
+        let win_fwd = vec![i32::MAX / 2; 16];
+        let mut fp = vec![i32::MAX / 2; (offset.n_flat_ls + offset.n_short) as usize];
+
+        windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 14);
+
+        // Values should be saturated, not overflowed
+        for i in 0..16 {
+            assert!(fp[i] <= i32::MAX, "fp[{}] should not overflow", i);
+            assert!(fp[i] >= i32::MIN, "fp[{}] should not underflow", i);
+        }
+    }
+
+    // ============================================================================
     // windowing_short3() tests
     // ============================================================================
     // Tests cover all code paths in ixheaacd_windowing_short3():
@@ -749,6 +1063,27 @@ mod tests {
 
         let exp = vec![163532144, -22394358, 16584022, 76121844, 52484535, -50044149, -43254984, 33485200, 34380898, 4812506, -3224008, 1006634];
         assert_eq!(fp, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    // ============================================================================
+    // windowing_short3() edge case tests - saturation
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_short3_saturating_add_overflow() {
+        // Test saturating_add when mult results would overflow
+        let src1 = vec![i32::MAX / 2; 12];
+        let win_fwd = vec![i32::MAX / 2; 12];
+        let mut fp = vec![i32::MAX / 2; 12];
+
+        let result_q = windowing_short3(&src1, &win_fwd, &mut fp, 14, 14);
+
+        // Values should be saturated, not overflowed
+        for i in 0..12 {
+            assert!(fp[i] <= i32::MAX, "fp[{}] should not overflow", i);
+            assert!(fp[i] >= i32::MIN, "fp[{}] should not underflow", i);
+        }
         assert_eq!(result_q, 14);
     }
 
@@ -836,10 +1171,10 @@ mod tests {
         
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
-            false, 14, 12, 15
+            false, 14, 12, 14
         );
         
-        let exp = vec![20479618, 26768068, 27560742, 40568478, 56827235, 47292592, 131048010, 105019168, 117387201, 137225888, 117271675, 130935568, 107374274, 99479094, 699163693, 163837054, 140341634, 104131670, 104131670, 140341634, 163837054, 699163693, 99479094, 107374274];
+        let exp = vec![40766216, 47054666, 47847340, 60855076, 77113833, 67579190, 131048010, 105019168, 117387201, 137225888, 117271675, 130935568, 107374274, 99479094, 699163693, 163837054, 140341634, 104131670, 104131670, 140341634, 163837054, 699163693, 99479094, 107374274];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 12);
     }
@@ -924,12 +1259,12 @@ mod tests {
         
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_rev1,
-            true, 12, 16, 14
+            true, 12, 16, 12
         );
         
-        let exp = vec![1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 999, 999, 999, 999, 999, 999, 999, 999, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249, 249];
+        let exp = vec![268436455, 268436455, 268436455, 268436455, 268436455, 268436455, 268436455, 268436455, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394];
         assert_eq!(fp, exp);
-        assert_eq!(result_q, 14);
+        assert_eq!(result_q, 12);
     }
 
     // ============================================================================
