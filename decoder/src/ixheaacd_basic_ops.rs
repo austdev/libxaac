@@ -130,30 +130,27 @@ pub fn combine_fac(
 pub fn windowing_long1(
     src1: &[i32],      // Current IMDCT output (first half)
     src2: &[i32],      // Current IMDCT output (second half)
-    win_fwd: &[i32],   // Forward window coefficients (vlen/2 samples)
-    win_rev: &[i32],   // Reverse window coefficients (vlen/2 samples, descending)
+    win_fwd: &[i32],   // Forward window coefficients
+    win_rev: &[i32],   // Reverse window coefficients
     dest: &mut [i32],  // Output buffer (vlen samples)
-    vlen: i32,         // Vector length (total samples to process)
     shift1: i8,        // Q-format of src1 (current IMDCT)
     shift2: i8,        // Q-format of src2 (overlap buffer)
 ) -> i8
 {
-    let vlen_u = vlen as usize;
-    assert!(vlen >= 0 && vlen % 2 == 0, "vlen must be non-negative and even");
-    assert!(src1.len() >= vlen_u / 2, "src1 must have at least vlen/2 samples");
-    assert!(src2.len() >= vlen_u, "src2 must have at least vlen samples");
-    assert!(win_fwd.len() >= vlen_u / 2, "win_fwd must have at least vlen/2 samples");
-    assert!(win_rev.len() >= vlen_u / 2, "win_rev must have at least vlen/2 samples");
-    assert!(dest.len() >= vlen_u, "dest must have at least vlen samples");
+    assert!(src1.len() >= dest.len() / 2, "src1 must have at least vlen/2 samples");
+    assert_eq!(src2.len(), dest.len(), "src2 must have at least vlen samples");
+    assert_eq!(win_fwd.len(), dest.len(), "win_fwd must have at least vlen/2 samples");
+    assert_eq!(win_rev.len(), dest.len(), "win_rev must have at least vlen/2 samples");
 
     unsafe {
+        let win_rev = win_rev.as_ptr().add(win_rev.len() - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
             src1.as_ptr() as *mut i32,
             src2.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
-            win_rev.as_ptr(),
+            win_rev as *mut i32,
             dest.as_mut_ptr(),
-            vlen,
+            dest.len() as i32,
             shift1,
             shift2,
         )
@@ -161,7 +158,7 @@ pub fn windowing_long1(
 }
 
 /// Handles long block windowing when transitioning from short to long blocks,
-/// incorporating FAC data.
+/// incorporating FAC data (Forward Aliasing Cancellation).
 ///
 /// # Returns
 /// Output Q-format
@@ -183,20 +180,23 @@ pub fn windowing_long1(
 /// ```
 pub fn windowing_long2(
     src1: &[i32],                        // Current IMDCT output (long block)
-    win_fwd: &[i32],                     // Forward window coefficients
-    fac_data_out: &[i32],                // FAC transition data
-    over_lap: &[i32],                    // Overlap buffer from previous frame
-    p_out_buffer: &mut [i32],            // Output buffer (n_long samples)
+    win_fwd: &[i32],                     // Forward window coefficients (n_trans_ls + lfac)
+    fac_data_out: &[i32],                // FAC transition data (input only, length: lfac * 2)
+    over_lap: &[i32],                    // Overlap buffer from previous frame (n_flat_ls + lfac)
+    dest: &mut [i32],            // Output buffer (n_long samples)
     ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_trans_ls, n_long)
-    shift1: i8,                          // Q-format of current IMDCT (src1)
-    shift2: i8,                          // Q-format of overlap buffer
-    shift3: i8,                          // Q-format of FAC data
+    shiftp: i8,                          // Q-format of current IMDCT (src1)
+    shift_olap: i8,                      // Q-format of overlap buffer
+    fac_q: i8,                           // Q-format of FAC data
 ) -> i8
 {
     let n_long = ixheaacd_drc_offset.n_long as usize;
-    assert!(p_out_buffer.len() >= n_long, "output buffer must have at least n_long samples");
-    assert!(over_lap.len() >= (ixheaacd_drc_offset.n_flat_ls + ixheaacd_drc_offset.lfac) as usize, "overlap buffer too small");
-    assert!(src1.len() >= n_long / 2, "src1 must have at least n_long/2 samples");
+    let n_trans_ls = ixheaacd_drc_offset.n_trans_ls as usize;
+    assert_eq!(src1.len(), n_long, "source buffer must have at least n_long samples");
+    assert_eq!(dest.len(), n_long, "output buffer must have at least n_long samples");
+    assert!(fac_data_out.len() >= (ixheaacd_drc_offset.lfac * 2) as usize, "fac_data buffer too small"); 
+    assert!(over_lap.len() >= (ixheaacd_drc_offset.lfac + ixheaacd_drc_offset.n_flat_ls) as usize, "overlap buffer too small");
+    assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
 
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
@@ -204,11 +204,11 @@ pub fn windowing_long2(
             win_fwd.as_ptr(),
             fac_data_out.as_ptr() as *mut i32,
             over_lap.as_ptr() as *mut i32,
-            p_out_buffer.as_mut_ptr(),
+            dest.as_mut_ptr(),
             ixheaacd_drc_offset.as_c_mut(),
-            shift1,
-            shift2,
-            shift3,
+            shiftp,
+            shift_olap,
+            fac_q,
         )
     }
 }
@@ -236,29 +236,33 @@ pub fn windowing_long3(
     src1: &[i32],                        // Current IMDCT output
     win_fwd: &[i32],                     // Forward window coefficients
     over_lap: &[i32],                    // Overlap buffer from previous frame
-    p_out_buffer: &mut [i32],            // Output buffer
+    dest: &mut [i32],            // Output buffer
     win_rev: &[i32],                     // Reverse window coefficients
     ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
-    shift1: i8,                          // Q-format of current IMDCT
-    shift2: i8,                          // Q-format of overlap buffer
+    shiftp: i8,                          // Q-format of current IMDCT
+    shift_olap: i8,                      // Q-format of overlap buffer
 ) -> i8
 {
-    {
-        let off = ixheaacd_drc_offset;
-        assert!(src1.len() >= off.n_long as usize, "src1 must have at least n_long samples");
-        assert!(over_lap.len() >= (off.n_flat_ls + off.n_trans_ls) as usize, "overlap buffer too small");
-        assert!(p_out_buffer.len() >= off.n_long as usize, "output buffer must have at least n_long samples");
-    }
+    let n_long = ixheaacd_drc_offset.n_long as usize;
+    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
+    let n_trans_ls = ixheaacd_drc_offset.n_trans_ls as usize;
+    assert_eq!(src1.len(), n_long, "source buffer must have at least n_long samples");
+    assert_eq!(dest.len(), n_long, "output buffer must have at least n_long samples");
+    assert!(over_lap.len() >= n_flat_ls + n_trans_ls, "overlap buffer too small");
+    assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
+    assert!(win_rev.len() >= n_trans_ls, "win_rev too small");
+
     unsafe {
+        let win_rev = win_rev.as_ptr().add(n_trans_ls as usize - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             over_lap.as_ptr() as *mut i32,
-            p_out_buffer.as_mut_ptr(),
-            win_rev.as_ptr(),
+            dest.as_mut_ptr(),
+            win_rev as *mut i32,
             ixheaacd_drc_offset.as_c_mut(),
-            shift1,
-            shift2,
+            shiftp,
+            shift_olap,
         )
     }
 }
@@ -285,10 +289,9 @@ pub fn windowing_short1(
     shift_olap: i8,                      // Q-format of overlap buffer (fp)
 )
 {
-    let off = ixheaacd_drc_offset;
-    let lfac = off.lfac as usize;
-    let n_short = off.n_short as usize;
-    let n_flat_ls = off.n_flat_ls as usize;
+    let lfac = ixheaacd_drc_offset.lfac as usize;
+    let n_short = ixheaacd_drc_offset.n_short as usize;
+    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
 
     assert_eq!(src1.len(), n_short, "src1 must have n_short samples");
     assert_eq!(src2.len(), n_short, "src2 must have n_short samples");
@@ -363,9 +366,8 @@ pub fn windowing_short2(
     shift_olap: i8,                      // Q-format of overlap buffer
 )
 {
-    let off = ixheaacd_drc_offset;
-    let n_short = off.n_short as usize;
-    let n_flat_ls = off.n_flat_ls as usize;
+    let n_short = ixheaacd_drc_offset.n_short as usize;
+    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
 
     assert!(src1.len() >= n_short / 2, "src1 must have at least n_short/2 samples");
     assert!(win_fwd.len() >= n_short, "win_fwd must have at least n_short samples");
@@ -737,6 +739,395 @@ fn shl32_sat(a: i32, b: u32) -> i32
 mod tests {
     use super::*;
 
+    // Helper function to create simple sine-like window coefficients
+    fn create_test_window_len32() -> Vec<i32> {
+        vec![
+              13176960,  118530360,  223600288,  328129056,  431869696,  534568800,  635979456,  735858880, 
+             833964544,  930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623,
+            1527788543, 1599999871, 1668354303, 1732692863, 1792854655, 1848697855, 1900087039, 1946900095,
+            1989020799, 2026350591, 2058798975, 2086288895, 2108751615, 2126133375, 2138393343, 2145503615]
+    }
+
+    // ============================================================================
+    // combine_fac() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_combine_fac():
+    // - Branch 1: fac_q > output_q (right-shift src2 before adding)
+    // - Branch 2: fac_q <= output_q (left-shift src2 with saturation before adding)
+    // ============================================================================
+
+    #[test]
+    fn test_combine_fac_branch1_fac_gt_output() {
+        // Branch 1: fac_q > output_q - right-shift src2 before adding
+        let src1 = vec![-1000000, i32::MIN, i32::MIN/2, i32::MAX, i32::MAX /2, 100000, 200000, 300000, -400000, 500000, 600000, -700000, 800000];
+        let src2 = vec![-1000000, i32::MIN/2, i32::MIN, i32::MAX/2, i32::MAX, 80000, 160000, 240000, 320000, 400000, -480000, 560000, -640000];
+        let mut dest = vec![0; src1.len()];
+
+        combine_fac(&src1, &src2, &mut dest, 12, 15); // fac_q=15 > output_q=12
+
+        let exp = vec![-1125000, -2147483648, -1342177280, 2147483647, 1342177278, 110000, 220000, 330000, -360000, 550000, 540000, -630000, 720000];
+        assert_eq!(dest, exp);
+    }
+
+    #[test]
+    fn test_combine_fac_branch2_fac_le_output() {
+        // Branch 2: fac_q <= output_q - left-shift src2 with saturation
+        let src1 = vec![-1000000, i32::MIN, i32::MIN/2, i32::MAX/2, i32::MAX, 100000, 200000, 300000, 400000, 500000, -600000, 700000, -800000];
+        let src2 = vec![-10000000, i32::MIN, i32::MIN/2, i32::MAX/2, i32::MAX, 10000, 20000, 30000, 40000, 50000, 60000, -70000, -80000];
+        let mut dest = vec![0; src1.len()];
+
+        combine_fac(&src1, &src2, &mut dest, 14, 12); // fac_q=12 <= output_q=15
+
+        let exp = vec![-41000000, -2147483648, -2147483648, 2147483647, 2147483647, 140000, 280000, 420000, 560000, 700000, -360000, 420000, -1120000];
+        assert_eq!(dest, exp);
+    }
+
+    #[test]
+    fn test_combine_fac_equal_q() {
+        // Edge case: fac_q == output_q (no shift)
+        let src1 = vec![i32::MIN, i32::MIN/2, i32::MAX/2, i32::MAX, 100000, 200000, -300000, -400000, 500000, 600000, 700000, 800000];
+        let src2 = vec![i32::MIN, i32::MIN/2, i32::MAX/2, i32::MAX, 10000, 20000, 30000, -40000, -50000, 60000, 70000, 80000];
+        let mut dest = vec![0; src1.len()];
+
+        combine_fac(&src1, &src2, &mut dest, 14, 14); // fac_q == output_q
+
+        let exp = vec![-2147483648, -2147483648, 2147483646, 2147483647, 110000, 220000, -270000, -440000, 450000, 660000, 770000, 880000];
+        assert_eq!(dest, exp);
+    }
+
+    // ============================================================================
+    // windowing_long1() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_windowing_long1():
+    // - Branch 1: shift1 > shift2 (scale down src1, keep src2 precision)
+    // - Branch 2: shift1 <= shift2 (keep src1 precision, scale down src2)
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_long1_branch1_shift1_gt_shift2() {
+        // Branch 1: shift1 > shift2 - scale down src1, keep src2 precision
+        let src1 = vec![
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+        ];
+        let src2 = vec![
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+        ];
+        let win_fwd = create_test_window_len32();
+        let mut dest = vec![0; win_fwd.len()];
+
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+                    &mut dest, 16, 14);
+
+        let exp = vec![-2145568044, 17234646, -29172329, 38, 485751935, -94, 1078072583, 1389306411, 208445805, 8738680, -860866994, -1252294511, 33888315, -112910168, -356550901, 12646, -28409246, 770415488, -599349339, -449, -520, -34, 379625710, -486763859, 735882034, -206775164, 51, 241, 517, 241342993, -301815991, 10490778];
+        assert_eq!(dest, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long1_branch2_shift1_le_shift2() {
+        // Branch 2: shift1 <= shift2 - keep src1 precision, scale down src2
+        let src1 = vec![
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+        ];
+        let src2 = vec![
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+        ];
+        let win_fwd = create_test_window_len32();
+        let mut dest = vec![0; win_fwd.len()];
+
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+                    &mut dest, 14, 16);
+
+        let exp = vec![-536633617, 68191762, -112105718, 152, 121437794, -14, 512882981, 347294477, 833953210, 2184466, -215216637, -313073629, 8474706, -160307662, -29219853, 50698, -7152335, 122754684, 21006085, -3895, -130, -211, 94906842, -1946909804, 184057339, -827100097, -26, 970, -791, 1056960767, -1227962086, 41961389];
+        assert_eq!(dest, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long1_equal_shifts() {
+        // Edge case: shift1 == shift2
+        let src1 = vec![
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+        ];
+        let src2 = vec![
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+        ];
+        let win_fwd = create_test_window_len32();
+        let mut dest = vec![0; win_fwd.len()];
+
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+                    &mut dest, 14, 14);
+
+        let exp = vec![-2145761328, 68341127, -113022437, 152, 485751784, -86, 1272764452, 1389280711, 833919213, 8738518, -860866904, -1252294511, 33890418, -218574263, -308616603, 50676, -28449264, 714536138, -462674603, -3475, -520, -196, 379626042, -1946938930, 735951499, -827100208, 21, 970, -218, 1038643009, -1223822461, 41961734];
+        assert_eq!(dest, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long1_large_shift_difference() {
+        // Test with large shift difference
+        let src1 = vec![
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+        ];
+        let src2 = vec![
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+        ];
+        let win_fwd = create_test_window_len32();
+        let mut dest = vec![0; win_fwd.len()];
+
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+                    &mut dest, 18, 12);
+
+        let exp = vec![-2145507642, 1263871, -2969171, 2, 485751982, -96, 1017231374, 1389314442, 12985365, 8738731, -860867022, -1252294511, 33887658, -79890138, -371530369, 762, -28396740, 787877784, -642060194, 496, -520, 16, 379625606, -30459149, 735860326, -12923588, 61, 14, 747, -7813262, -13688969, 656104];
+        assert_eq!(dest, exp);
+        assert_eq!(result_q, 12);
+    }
+
+    // ============================================================================
+    // windowing_long2() tests
+    // ============================================================================
+    // Tests cover all 4 code paths in ixheaacd_windowing_long2():
+    // - Branch 1: shiftp > fac_q && shift_olap > fac_q (return fac_q)
+    // - Branch 2: shiftp > fac_q && shift_olap <= fac_q (return shift_olap)
+    // - Branch 3: shiftp <= fac_q && shift_olap > shiftp (return shiftp)
+    // - Branch 4: shiftp <= fac_q && shift_olap <= shiftp (return shift_olap)
+    // ============================================================================
+
+    // Helper to create offset_lengths for windowing_long2 tests with reduced sizes
+    fn create_test_offset_long2() -> OffsetLengths {
+        // Proportionally reduced: n_long=64, lfac=8, n_flat_ls=16, n_trans_ls=16
+        OffsetLengths {
+            lfac: 8, 
+            n_flat_ls: 24,
+            n_trans_ls: 16,
+            n_long: 64,
+            n_short: 8,
+        }
+    }
+
+    fn create_test_src1_long2() -> Vec<i32> {
+        vec![
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+        ]
+    }
+
+    fn create_test_overlap_long2() -> Vec<i32> {
+        vec![
+            i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+       ]
+    }
+
+    fn create_test_overlap_long3() -> Vec<i32> {
+        vec![
+            -1500000000, i32::MAX, -234567890, 999, 500000000, i32::MIN / 2, -100, 75000, i32::MIN, 200000, -1234567, 0, 500000000, -100, i32::MAX / 2, 1500000000, -50000,
+            9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, i32::MAX / 2, -999999999, 42000000, i32::MIN, 1234567890, -50000, 250, 876543210,
+            -42000000, 1234567890, i32::MIN / 2, 999, -1000, 42, 876543210, -100000, i32::MAX, -500, 250, -1, 5000, -234567890, 100000000, 75000,
+       ]
+    }
+
+    fn create_test_fac_data() -> Vec<i32> {
+        vec![
+            i32::MAX / 2, -999999999, 42000000, i32::MIN, 1234567890, -50000, 250, 876543210,
+            -1500000000, i32::MAX, -234567890, 999, 500000000, i32::MIN / 2, -100, 75000,
+        ]
+    }
+
+    #[test]
+    fn test_windowing_long2_branch1_shiftp_gt_fac_olap_gt_fac() {
+        // Branch 1: shiftp > fac_q && shift_olap > fac_q (return fac_q)
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let fac_data = create_test_fac_data();
+        let over_lap = create_test_overlap_long2();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long2(
+            &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
+            &offset, 16, 14, 12  // shiftp=16 > fac_q=12, shift_olap=14 > fac_q=12
+        );
+
+        let exp = vec![-536870912, 50000, -308642, 0, 125000000, -25, 268435455, 375000000, -12500, 2469135, -250000000, -375000000, 10500000, -25000000, -125000000, -11, -10500000, 308641972, -268435456, 249, -250, 10, 219135802, -25000, 536870911, -125, 62, -1, 1250, -58641973, 25000000, 18750, 1073741824, -986465812, 44979993, -2147483648, 1287129949, 37488561, -394271, 876545322, -1593750000, 2080374783, -234567884, -31249001, 500000000, -1073664664, -12600, 134292727, -4688, -6250000, 14660493, -313, 0, -16, 31, -134217728, 6250, -54783951, -3, 62, -63, 67108864, -77160494, 2625000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 12);
+    }
+
+    #[test]
+    fn test_windowing_long2_branch2_shiftp_gt_fac_olap_le_fac() {
+        // Branch 2: shiftp > fac_q && shift_olap <= fac_q (return shift_olap)
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let fac_data = create_test_fac_data();
+        let over_lap = create_test_overlap_long2();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long2(
+            &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
+            &offset, 16, 10, 12  // shiftp=16 > fac_q=12, shift_olap=10 <= fac_q=12
+        );
+
+        let exp = vec![-2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, -42000000, 1234567890, -1073741824, 999, -1000, 42, 876543210, -100000, 2147483647, -500, 250, -1, 5000, -234567890, 100000000, 75000, 268435455, -246616454, 11244998, -537211740, 321782486, 9372140, -98569, 219136330, -398437500, 520093695, -58641972, -7812251, 125000000, -268416166, -3150, 33573181, -1172, -1562500, 3665123, -79, 0, -4, 7, -33554432, 1562, -13695988, -1, 15, -16, 16777216, -19290124, 656250];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 10);
+    }
+
+    #[test]
+    fn test_windowing_long2_branch3_shiftp_le_fac_olap_gt_shiftp() {
+        // Branch 3: shiftp <= fac_q && shift_olap > shiftp (return shiftp)
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let fac_data = create_test_fac_data();
+        let over_lap = create_test_overlap_long2();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long2(
+            &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
+            &offset, 12, 15, 14  // shiftp=12 <= fac_q=14, shift_olap=15 > shiftp=12
+        );
+
+        let exp = vec![-268435456, 25000, -154321, 0, 62500000, -13, 134217727, 187500000, -6250, 1234567, -125000000, -187500000, 5250000, -12500000, -62500000, -6, -5250000, 154320986, -134217728, 124, -125, 5, 109567901, -12500, 268435455, -63, 31, -1, 625, -29320987, 12500000, 9375, 268435471, -33453003, 58179901, -558683865, 1149634928, 600604490, -6312274, 219169606, -1875000000, -536870912, -58641873, -499999751, 125000000, -267200889, -200025, 2147483647, -75000, -100000000, 234567890, -5000, 1, -250, 500, -2147483647, 100000, -876543210, -42, 1000, -999, 1073741824, -1234567890, 42000000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 12);
+    }
+
+    #[test]
+    fn test_windowing_long2_branch4_shiftp_le_fac_olap_le_shiftp() {
+        // Branch 4: shiftp <= fac_q && shift_olap <= shiftp (return shift_olap)
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let fac_data = create_test_fac_data();
+        let over_lap = create_test_overlap_long2();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long2(
+            &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
+            &offset, 12, 10, 14  // shiftp=12 <= fac_q=14, shift_olap=10 <= shiftp=12
+        );
+
+        let exp = vec![-2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, -42000000, 1234567890, -1073741824, 999, -1000, 42, 876543210, -100000, 2147483647, -500, 250, -1, 5000, -234567890, 100000000, 75000, 67108867, -8363251, 14544975, -139670967, 287408732, 150151122, -1578069, 54792401, -468750000, -134217729, -14660469, -124999938, 31250000, -66800223, -50007, 536875598, -18750, -25000000, 58641972, -1250, 0, -63, 125, -536870912, 25000, -219135803, -11, 250, -250, 268435456, -308641973, 10500000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 10);
+    }
+
+    #[test]
+    fn test_windowing_long2_all_equal_q() {
+        // Edge case: all Q-formats equal
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let fac_data = create_test_fac_data();
+        let over_lap = create_test_overlap_long2();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long2(
+            &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
+            &offset, 14, 14, 14  // All equal
+        );
+
+        let exp = vec![-2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, -42000000, 1234567890, -1073741824, 999, -1000, 42, 876543210, -100000, 2147483647, -500, 250, -1, 5000, -234567890, 100000000, 75000, 1073741839, -783453002, 89679901, -2147483648, 2075560846, 600566990, -6312086, 876577014, -2147483648, 1073741824, -234567790, -499999001, 500000000, -1072507257, -200100, 2147483647, -75000, -100000000, 234567890, -5000, 1, -250, 500, -2147483647, 100000, -876543210, -42, 1000, -999, 1073741824, -1234567890, 42000000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    // ============================================================================
+    // windowing_long3() tests
+    // ============================================================================
+    // Tests cover all code paths in ixheaacd_windowing_long3():
+    // - Branch 1: shiftp > shift_olap (memcpy flat, scale down src1) - return shift_olap
+    // - Branch 2: shiftp <= shift_olap (scale down overlap) - return shiftp
+    // ============================================================================
+
+    #[test]
+    fn test_windowing_long3_branch1_shiftp_gt_olap() {
+        // Branch 1: shiftp > shift_olap (memcpy flat, scale down src1) - return shift_olap
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let over_lap = create_test_overlap_long3();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long3(
+            &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
+            &offset, 16, 14  // shiftp=16 > shift_olap=14
+        );
+
+        let exp = vec![-1500000000, 2147483647, -234567890, 999, 500000000, -1073741824, -100, 75000, -2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, 725949233, -638987693, -804587, -1261311290, 643291857, -6247040, -37018769, 340401171, -14391758, 419755279, -255364425, -5453039, 210248086, 150154251, 46802718, 7837, -375000000, -268435456, 25, -125000000, 0, 308641, -50000, 536870911, -18750, -25000000, 58641972, -1250, 0, -63, 125, -536870912, 25000, -219135803, -11, 250, -250, 268435456, -308641973, 10500000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long3_branch2_shiftp_le_olap() {
+        // Branch 2: shiftp <= shift_olap (scale down overlap) - return shiftp
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let over_lap = create_test_overlap_long3();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long3(
+            &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
+            &offset, 14, 16  // shiftp=14 <= shift_olap=16
+        );
+
+        let exp = vec![-375000000, 536870911, -58641973, 249, 125000000, -268435456, -25, 18750, -536870912, 50000, -308642, 0, 125000000, -25, 268435455, 375000000, -12500, 2469135, -250000000, -375000000, 10500000, -25000000, -125000000, -11, 181487020, -159235859, -97815520, -530198602, 168741472, -24898760, -148075480, 85100278, -3597925, 307951629, -19141199, -21812903, 840992917, 600616991, 5782864, 33650, -1500000000, -1073741823, 100, -500000000, 0, 1234567, -200000, 2147483647, -75000, -100000000, 234567890, -5000, 1, -250, 500, -2147483647, 100000, -876543210, -42, 1000, -999, 1073741824, -1234567890, 42000000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long3_equal_shifts() {
+        // Edge case: shiftp == shift_olap
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let over_lap = create_test_overlap_long3();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long3(
+            &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
+            &offset, 14, 14  // Equal shifts
+        );
+
+        let exp = vec![-1500000000, 2147483647, -234567890, 999, 500000000, -1073741824, -100, 75000, -2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, 725949003, -638578841, -78896085, -1433207913, 649626664, -24916640, -148075399, 340401160, -14391746, 582165527, -219604499, -21812753, 840992803, 600616994, 42068466, 33190, -1500000000, -1073741823, 100, -500000000, 0, 1234567, -200000, 2147483647, -75000, -100000000, 234567890, -5000, 1, -250, 500, -2147483647, 100000, -876543210, -42, 1000, -999, 1073741824, -1234567890, 42000000];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 14);
+    }
+
+    #[test]
+    fn test_windowing_long3_large_shift_difference() {
+        // Test with large shift difference
+        let offset = create_test_offset_long2();
+        let src1 = create_test_src1_long2();
+        let win_fwd = create_test_window_len32();
+        let over_lap = create_test_overlap_long3();
+        let mut p_out_buffer = vec![0; offset.n_long as usize];
+
+        let result_q = windowing_long3(
+            &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
+            &offset, 18, 12  // Large difference: shiftp - shift_olap = 6
+        );
+
+        let exp = vec![-1500000000, 2147483647, -234567890, 999, 500000000, -1073741824, -100, 75000, -2147483648, 200000, -1234567, 0, 500000000, -100, 1073741823, 1500000000, -50000, 9876543, -999999999, -1500000000, 42000000, -100000000, -500000000, -42, 725949305, -639115459, 23599006, -1207593595, 641312230, -412790, -2313572, 340401174, -14391762, 369002076, -266539402, -340628, 13140361, 9384644, 48282171, -86, -23437500, -16777216, 1, -7812500, 0, 19290, -3125, 33554431, -1172, -1562500, 3665123, -79, 0, -4, 7, -33554432, 1562, -13695988, -1, 15, -16, 16777216, -19290124, 656250];
+        assert_eq!(p_out_buffer, exp);
+        assert_eq!(result_q, 12);
+    }
+
     // ============================================================================
     // windowing_short1() tests
     // ============================================================================
@@ -746,15 +1137,6 @@ mod tests {
     // - Branch 3: shift_olap <= shiftp && n_short > lfac
     // - Branch 4: shift_olap <= shiftp && n_short <= lfac
     // ============================================================================
-
-    // Helper function to create simple sine-like window coefficients
-    fn create_test_window_len32() -> Vec<i32> {
-        vec![
-              13176960,  118530360,  223600288,  328129056,  431869696,  534568800,  635979456,  735858880, 
-             833964544,  930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623,
-            1527788543, 1599999871, 1668354303, 1732692863, 1792854655, 1848697855, 1900087039, 1946900095,
-            1989020799, 2026350591, 2058798975, 2086288895, 2108751615, 2126133375, 2138393343, 2145503615]
-    }
 
     #[test]
     fn test_windowing_short1_branch1_olap_nshort() {
