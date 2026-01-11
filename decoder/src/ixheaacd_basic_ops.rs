@@ -17,6 +17,8 @@ use std::mem;
 trait FixedPointOps {
     /// Q31 fixed-point multiply: (a * b) >> 31
     fn mult_shift_q31(self, other: Self) -> Self;
+    /// Saturating left shift: clamps to i32::MIN/MAX on overflow
+    fn saturating_shl(self, shift: u32) -> Self;
 }
 
 #[cfg(not(feature = "fallback"))]
@@ -24,6 +26,17 @@ impl FixedPointOps for i32 {
     #[inline]
     fn mult_shift_q31(self, other: Self) -> Self {
         ((self as i64 * other as i64) >> 31) as i32
+    }
+
+    #[inline]
+    fn saturating_shl(self, shift: u32) -> Self {
+        if self > (i32::MAX >> shift) {
+            i32::MAX
+        } else if self < (i32::MIN >> shift) {
+            i32::MIN
+        } else {
+            self << shift
+        }
     }
 }
 
@@ -97,6 +110,7 @@ pub fn combine_fac(
     assert_eq!(src1.len(), src2.len(), "src1 and src2 must have same length");
     assert_eq!(src1.len(), dest.len(), "src1 and dest must have same length");
 
+    #[cfg(feature = "fallback")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_combine_fac(
             src1.as_ptr() as *mut i32,
@@ -107,13 +121,27 @@ pub fn combine_fac(
             shift2,
         );
     }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        if shift2 > shift1 {
+            // Right-shift src2 before adding
+            let shift = (shift2 - shift1) as u32;
+            for ((d, &s1), &s2) in dest.iter_mut().zip(src1.iter()).zip(src2.iter()) {
+                *d = s1.saturating_add(s2 >> shift);
+            }
+        } else {
+            // Left-shift src2 with saturation before adding
+            let shift = (shift1 - shift2) as u32;
+            for ((d, &s1), &s2) in dest.iter_mut().zip(src1.iter()).zip(src2.iter()) {
+                *d = s1.saturating_add(s2.saturating_shl(shift));
+            }
+        }
+    }
 }
 
 /// Performs overlap-add synthesis for long IMDCT blocks with different Q-formats
 /// for current and overlap data.
-///
-/// # Returns
-/// Output Q-format (min of shift1, shift2)
 ///
 /// # Algorithm
 /// Processes `vlen/2` samples:
@@ -135,33 +163,59 @@ pub fn windowing_long1(
     dest: &mut [i32],  // Output buffer (vlen samples)
     shift1: i8,        // Q-format of src1 (current IMDCT)
     shift2: i8,        // Q-format of src2 (overlap buffer)
-) -> i8
+) -> i8  // Returns Q-format of output (min of shift1, shift2)
 {
-    assert!(src1.len() >= dest.len() / 2, "src1 must have at least vlen/2 samples");
-    assert_eq!(src2.len(), dest.len(), "src2 must have at least vlen samples");
-    assert_eq!(win_fwd.len(), dest.len(), "win_fwd must have at least vlen/2 samples");
-    assert_eq!(win_rev.len(), dest.len(), "win_rev must have at least vlen/2 samples");
+    let vlen = dest.len();
+    assert!(src1.len() >= vlen / 2, "src1 must have at least vlen/2 samples");
+    assert_eq!(src2.len(), vlen, "src2 must have at least vlen samples");
+    assert_eq!(win_fwd.len(), vlen, "win_fwd must have at least vlen/2 samples");
+    assert_eq!(win_rev.len(), vlen, "win_rev must have at least vlen/2 samples");
 
+    #[cfg(feature = "fallback")]
     unsafe {
         let win_rev = win_rev.as_ptr().add(win_rev.len() - 1);
-        crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
+        return crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
             src1.as_ptr() as *mut i32,
             src2.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             win_rev as *mut i32,
             dest.as_mut_ptr(),
-            dest.len() as i32,
+            vlen as i32,
             shift1,
             shift2,
-        )
+        );
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        let half = vlen / 2;
+
+        if shift1 > shift2 {
+            let shift = (shift1 - shift2) as u32;
+            for i in 0..half {
+                let mirror = vlen - i - 1;
+                dest[i] = (src1[i].mult_shift_q31(win_fwd[i]) >> shift)
+                    .saturating_add(src2[i].mult_shift_q31(win_rev[mirror]));
+                dest[mirror] = (src1[i].saturating_neg().mult_shift_q31(win_rev[mirror]) >> shift)
+                    .saturating_add(src2[mirror].mult_shift_q31(win_fwd[i]));
+            }
+            shift2
+        } else {
+            let shift = (shift2 - shift1) as u32;
+            for i in 0..half {
+                let mirror = vlen - i - 1;
+                dest[i] = src1[i].mult_shift_q31(win_fwd[i])
+                    .saturating_add(src2[i].mult_shift_q31(win_rev[mirror]) >> shift);
+                dest[mirror] = src1[i].saturating_neg().mult_shift_q31(win_rev[mirror])
+                    .saturating_add(src2[mirror].mult_shift_q31(win_fwd[i]) >> shift);
+            }
+            shift1
+        }
     }
 }
 
 /// Handles long block windowing when transitioning from short to long blocks,
 /// incorporating FAC data (Forward Aliasing Cancellation).
-///
-/// # Returns
-/// Output Q-format
 ///
 /// # Frame Regions
 /// Controlled by `ixheaacd_drc_offset`:
@@ -188,18 +242,22 @@ pub fn windowing_long2(
     shiftp: i8,                          // Q-format of current IMDCT (src1)
     shift_olap: i8,                      // Q-format of overlap buffer
     fac_q: i8,                           // Q-format of FAC data
-) -> i8
+) -> i8  // Returns Q-format of output buffer
 {
     let n_long = ixheaacd_drc_offset.n_long as usize;
     let n_trans_ls = ixheaacd_drc_offset.n_trans_ls as usize;
+    let lfac = ixheaacd_drc_offset.lfac as usize;
+    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
+
     assert_eq!(src1.len(), n_long, "source buffer must have at least n_long samples");
     assert_eq!(dest.len(), n_long, "output buffer must have at least n_long samples");
-    assert!(fac_data_out.len() >= (ixheaacd_drc_offset.lfac * 2) as usize, "fac_data buffer too small"); 
-    assert!(over_lap.len() >= (ixheaacd_drc_offset.lfac + ixheaacd_drc_offset.n_flat_ls) as usize, "overlap buffer too small");
+    assert!(fac_data_out.len() >= lfac * 2, "fac_data buffer too small");
+    assert!(over_lap.len() >= lfac + n_flat_ls, "overlap buffer too small");
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
 
+    #[cfg(feature = "fallback")]
     unsafe {
-        crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
+        return crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             fac_data_out.as_ptr() as *mut i32,
@@ -209,14 +267,124 @@ pub fn windowing_long2(
             shiftp,
             shift_olap,
             fac_q,
-        )
+        );
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        // Region boundaries
+        let region1_end = n_flat_ls + lfac;
+        let region2_end = n_flat_ls + n_trans_ls;
+        let region3_end = n_flat_ls + 3 * lfac;
+
+        // src1 base index for computing source indices
+        let base = n_long / 2 + n_flat_ls + lfac;
+
+        // win_fwd is used starting at lfac offset in C code
+        let win_fwd = &win_fwd[lfac..];
+
+        if shiftp > fac_q {
+            if shift_olap > fac_q {
+                // Branch 1: shiftp > fac_q && shift_olap > fac_q → return fac_q
+                let shift_o = (shift_olap - fac_q) as u32;
+                let shift_p = (shiftp - fac_q) as u32;
+
+                // Region 1: Copy overlap with shift
+                for i in 0..region1_end {
+                    dest[i] = over_lap[i] >> shift_o;
+                }
+                // Region 2: Windowed IMDCT + FAC
+                for (i, (fac, &win)) in (region1_end..region2_end).zip(fac_data_out.iter().zip(win_fwd.iter())) {
+                    dest[i] = (src1[base - i - 1].saturating_neg().mult_shift_q31(win) >> shift_p)
+                        .saturating_add(*fac);
+                }
+                // Region 3: Negated IMDCT + FAC (no window)
+                let fac_offset = region2_end - region1_end;
+                for (i, fac) in (region2_end..region3_end).zip(fac_data_out[fac_offset..].iter()) {
+                    dest[i] = (src1[base - i - 1].saturating_neg() >> shift_p).saturating_add(*fac);
+                }
+                // Region 4: Negated IMDCT only
+                for i in region3_end..n_long {
+                    dest[i] = src1[base - i - 1].saturating_neg() >> shift_p;
+                }
+                fac_q
+            } else {
+                // Branch 2: shiftp > fac_q && shift_olap <= fac_q → return shift_olap
+                let shift_p = (shiftp - shift_olap) as u32;
+                let shift_f = (fac_q - shift_olap) as u32;
+
+                // Region 1: Copy overlap directly
+                dest[..region1_end].copy_from_slice(&over_lap[..region1_end]);
+                // Region 2: Windowed IMDCT + FAC
+                for (i, (fac, &win)) in (region1_end..region2_end).zip(fac_data_out.iter().zip(win_fwd.iter())) {
+                    dest[i] = (src1[base - i - 1].saturating_neg().mult_shift_q31(win) >> shift_p)
+                        .saturating_add(*fac >> shift_f);
+                }
+                // Region 3: Negated IMDCT + FAC
+                let fac_offset = region2_end - region1_end;
+                for (i, fac) in (region2_end..region3_end).zip(fac_data_out[fac_offset..].iter()) {
+                    dest[i] = (src1[base - i - 1].saturating_neg() >> shift_p)
+                        .saturating_add(*fac >> shift_f);
+                }
+                // Region 4: Negated IMDCT only
+                for i in region3_end..n_long {
+                    dest[i] = src1[base - i - 1].saturating_neg() >> shift_p;
+                }
+                shift_olap
+            }
+        } else {
+            // shiftp <= fac_q
+            if shift_olap > shiftp {
+                // Branch 3: shiftp <= fac_q && shift_olap > shiftp → return shiftp
+                let shift_o = (shift_olap - shiftp) as u32;
+                let shift_f = (fac_q - shiftp) as u32;
+
+                // Region 1: Copy overlap with shift
+                for i in 0..region1_end {
+                    dest[i] = over_lap[i] >> shift_o;
+                }
+                // Region 2: Windowed IMDCT + FAC
+                for (i, (fac, &win)) in (region1_end..region2_end).zip(fac_data_out.iter().zip(win_fwd.iter())) {
+                    dest[i] = src1[base - i - 1].saturating_neg().mult_shift_q31(win).saturating_add(*fac >> shift_f);
+                }
+                // Region 3: Negated IMDCT + FAC
+                let fac_offset = region2_end - region1_end;
+                for (i, fac) in (region2_end..region3_end).zip(fac_data_out[fac_offset..].iter()) {
+                    dest[i] = src1[base - i - 1].saturating_neg().saturating_add(*fac >> shift_f);
+                }
+                // Region 4: Negated IMDCT only
+                for i in region3_end..n_long {
+                    dest[i] = src1[base - i - 1].saturating_neg();
+                }
+                shiftp
+            } else {
+                // Branch 4: shiftp <= fac_q && shift_olap <= shiftp → return shift_olap
+                let shift_p = (shiftp - shift_olap) as u32;
+                let shift_f = (fac_q - shift_olap) as u32;
+
+                // Region 1: Copy overlap directly
+                dest[..region1_end].copy_from_slice(&over_lap[..region1_end]);
+                // Region 2: Windowed IMDCT + FAC
+                for (i, (fac, &win)) in (region1_end..region2_end).zip(fac_data_out.iter().zip(win_fwd.iter())) {
+                    dest[i] = (src1[base - i - 1].saturating_neg().mult_shift_q31(win) >> shift_p)
+                        .saturating_add(*fac >> shift_f);
+                }
+                // Region 3: Negated IMDCT + FAC
+                let fac_offset = region2_end - region1_end;
+                for (i, fac) in (region2_end..region3_end).zip(fac_data_out[fac_offset..].iter()) {
+                    dest[i] = (src1[base - i - 1].saturating_neg() >> shift_p).saturating_add(*fac >> shift_f);
+                }
+                // Region 4: Negated IMDCT only
+                for i in region3_end..n_long {
+                    dest[i] = src1[base - i - 1].saturating_neg() >> shift_p;
+                }
+                shift_olap
+            }
+        }
     }
 }
 
 /// Standard overlap-add for long blocks with flat and transition regions.
-///
-/// # Returns
-/// Output Q-format
 ///
 /// # Frame Regions
 /// 1. **Flat left** `[0 .. n_flat_ls)`: Copy overlap buffer
@@ -241,7 +409,7 @@ pub fn windowing_long3(
     ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
     shiftp: i8,                          // Q-format of current IMDCT
     shift_olap: i8,                      // Q-format of overlap buffer
-) -> i8
+) -> i8  // Returns Q-format of output buffer
 {
     let n_long = ixheaacd_drc_offset.n_long as usize;
     let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
@@ -252,9 +420,10 @@ pub fn windowing_long3(
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
     assert!(win_rev.len() >= n_trans_ls, "win_rev too small");
 
+    #[cfg(feature = "fallback")]
     unsafe {
         let win_rev = win_rev.as_ptr().add(n_trans_ls as usize - 1);
-        crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
+        return crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             over_lap.as_ptr() as *mut i32,
@@ -263,7 +432,76 @@ pub fn windowing_long3(
             ixheaacd_drc_offset.as_c_mut(),
             shiftp,
             shift_olap,
-        )
+        );
+    }
+
+    #[cfg(not(feature = "fallback"))]
+    {
+        // Region boundaries
+        let half = n_long / 2;
+        let region3_end = n_flat_ls + n_trans_ls;
+
+        if shiftp > shift_olap {
+            // Branch 1: shiftp > shift_olap → return shift_olap
+            let shift = (shiftp - shift_olap) as u32;
+
+            // Region 1: Copy overlap directly
+            dest[..n_flat_ls].copy_from_slice(&over_lap[..n_flat_ls]);
+
+            // Region 2: [n_flat_ls, n_long/2) - src1[i] * win_fwd + overlap[i] * win_rev
+            for i in n_flat_ls..half {
+                let win_idx = i - n_flat_ls;
+                let win_rev_idx = n_trans_ls - 1 - win_idx;
+                dest[i] = (src1[i].mult_shift_q31(win_fwd[win_idx]) >> shift)
+                    .saturating_add(over_lap[i].mult_shift_q31(win_rev[win_rev_idx]));
+            }
+
+            // Region 3: [n_long/2, n_flat_ls + n_trans_ls) - -src1[n_long-i-1] * win_fwd + overlap[i] * win_rev
+            for i in half..region3_end {
+                let win_idx = i - n_flat_ls;
+                let win_rev_idx = n_trans_ls - 1 - win_idx;
+                dest[i] = (src1[n_long - i - 1].saturating_neg().mult_shift_q31(win_fwd[win_idx]) >> shift)
+                    .saturating_add(over_lap[i].mult_shift_q31(win_rev[win_rev_idx]));
+            }
+
+            // Region 4: [n_flat_ls + n_trans_ls, n_long) - negated IMDCT only
+            for i in region3_end..n_long {
+                dest[i] = src1[n_long - i - 1].saturating_neg() >> shift;
+            }
+
+            shift_olap
+        } else {
+            // Branch 2: shiftp <= shift_olap → return shiftp
+            let shift = (shift_olap - shiftp) as u32;
+
+            // Region 1: Copy overlap with shift
+            for i in 0..n_flat_ls {
+                dest[i] = over_lap[i] >> shift;
+            }
+
+            // Region 2: [n_flat_ls, n_long/2) - src1[i] * win_fwd + (overlap[i] * win_rev >> shift)
+            for i in n_flat_ls..half {
+                let win_idx = i - n_flat_ls;
+                let win_rev_idx = n_trans_ls - 1 - win_idx;
+                dest[i] = src1[i].mult_shift_q31(win_fwd[win_idx])
+                    .saturating_add(over_lap[i].mult_shift_q31(win_rev[win_rev_idx]) >> shift);
+            }
+
+            // Region 3: [n_long/2, n_flat_ls + n_trans_ls) - -src1[n_long-i-1] * win_fwd + (overlap[i] * win_rev >> shift)
+            for i in half..region3_end {
+                let win_idx = i - n_flat_ls;
+                let win_rev_idx = n_trans_ls - 1 - win_idx;
+                dest[i] = src1[n_long - i - 1].saturating_neg().mult_shift_q31(win_fwd[win_idx])
+                    .saturating_add(over_lap[i].mult_shift_q31(win_rev[win_rev_idx]) >> shift);
+            }
+
+            // Region 4: [n_flat_ls + n_trans_ls, n_long) - negated IMDCT only
+            for i in region3_end..n_long {
+                dest[i] = src1[n_long - i - 1].saturating_neg();
+            }
+
+            shiftp
+        }
     }
 }
 
@@ -427,9 +665,6 @@ pub fn windowing_short2(
 
 /// Final windowing stage for short blocks in EIGHT_SHORT_SEQUENCE mode.
 ///
-/// # Returns
-/// Output Q-format (min of shiftp, shift_olap)
-///
 /// # Processing
 /// Processes `n_short/2` samples using second half of src1:
 /// - `fp[i] = -src1[n_short/2-i-1] * win_rev + fp[i]` (Q-aligned)
@@ -446,7 +681,7 @@ pub fn windowing_short3(
     fp: &mut [i32],    // In/Out overlap buffer
     shiftp: i8,        // Q-format of current IMDCT
     shift_olap: i8,    // Q-format of overlap buffer
-) -> i8
+) -> i8  // Returns Q-format of output buffer (min of shiftp, shift_olap)
 {
     let n_short = src1.len();
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
@@ -545,7 +780,8 @@ pub fn windowing_short4(
     shiftp: i8,   // Q-format of src1 (current IMDCT)
     shift_olap: i8,  // Q-format of fp (overlap buffer)
     output_q: i8,  // Target Q-format for output
-) -> i8 {
+) -> i8  // Returns Q-format of output buffer
+{
     let n_short = src1.len();
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
     assert_eq!(n_short, win_rev1.len(), "backward window must have same length");
@@ -644,8 +880,8 @@ pub fn windowing_short4(
                     let fp_idx2 = 2 * n_short - 1 - j;
                     let neg_src = src1[half - 1 - j].saturating_neg();
 
-                    fp[fp_idx1] = (neg_src >> shift_p).saturating_add(fp[fp_idx1]);
-                    fp[fp_idx2] = (neg_src >> shift_p).saturating_add(fp[fp_idx2]);
+                    fp[fp_idx1] = fp[fp_idx1].saturating_add(neg_src >> shift_p);
+                    fp[fp_idx2] = fp[fp_idx2].saturating_add(neg_src >> shift_p);
                 }
             }
             shift_olap
@@ -682,7 +918,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
     } else {
         let shift = (shift2 - shift1) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
-            *d = shl32_sat(*s, shift);
+            *d = s.saturating_shl(shift);
         }
     }
 
@@ -716,22 +952,8 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
     } else {
         let shift = (shift2 - shift1) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
-            *d = shl32_sat(*s, shift).saturating_add(ADJ_SCALE);
+            *d = s.saturating_shl(shift).saturating_add(ADJ_SCALE);
         }
-    }
-}
-
-/// Saturating left shift for 32-bit signed integers
-#[inline]
-#[cfg(not(feature = "fallback"))]
-fn shl32_sat(a: i32, b: u32) -> i32 
-{
-    let max = i32::MAX >> b;
-    let min = i32::MIN >> b;
-    match a {
-        _ if a > max => i32::MAX,
-        _ if a < min => i32::MIN,
-        _ => a << b,
     }
 }
 

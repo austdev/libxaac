@@ -31,7 +31,7 @@ libxaac/
 - Put generated analysis document into `docs` directory
 - Prefix all document files with `claude_`  
 
-### Rust Migration
+## Rust Migration
 
 The decoder is being incrementally migrated to Rust following a 5-phase cycle per group of functions (see `RUST.migration.md`):
 
@@ -43,13 +43,16 @@ The decoder is being incrementally migrated to Rust following a 5-phase cycle pe
 
 The new Rust implementation is committing into dev/rusty_water branch.
 
-**Key files:**
+### Rust key files
+
 - `decoder/src/lib.rs` - Library root with FFI exports
 - `decoder/src/ixheaacd.rs` - Module publishing migrated functions
 - `decoder/src/gen_ixheaacd_ref.rs` - Auto-generated FFI bindings (bindgen)
 - `decoder/build.rs` - Bindgen configuration
 
-**Cargo features:**
-- `fallback` - Use C implementation via FFI (testing/validation)
-- `integration` - Export Rust functions as C-compatible API for integration test
+### Rust implementation rules
 
+- Don't introduce new immutable variable if it will be used just once
+- Don't borrow struct for accessing its members if it passed by ref already 
+- Prefer iterators / zipped iterators if there are no complex indexes manipulation 
+- Implement Rust idiomatic code 
