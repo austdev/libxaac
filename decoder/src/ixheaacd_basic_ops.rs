@@ -68,7 +68,7 @@ impl FixedPointOps for i32 {
      }
 
      /// Create from C struct reference (zero-cost, no copy)
-     unsafe fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
+     pub fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
          unsafe { &*(c as *const crate::gen_ixheaacd_ref::offset_lengths as *const Self) }
      }
 
@@ -954,6 +954,19 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
         for (d, s) in dest.iter_mut().zip(src.iter()) {
             *d = s.saturating_shl(shift).saturating_add(ADJ_SCALE);
         }
+    }
+}
+
+/// Multiplies each element of a vector by a constant (FLOAT32 version)
+///
+/// # C signature
+/// ```c
+/// VOID ixheaacd_vec_cnst_mul(FLOAT32 a, FLOAT32 x[], FLOAT32 z[], WORD32 n);
+/// ```
+pub fn vec_cnst_mul(a: f32, x: &[f32], z: &mut [f32]) {
+    assert_eq!(x.len(), z.len(), "x and z must have same length");
+    for (zi, &xi) in z.iter_mut().zip(x.iter()) {
+        *zi = a * xi;
     }
 }
 

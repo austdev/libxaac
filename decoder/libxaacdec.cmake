@@ -18,7 +18,7 @@ list(
   "${XAAC_ROOT}/decoder/ixheaacd_avq_dec.c"
   "${XAAC_ROOT}/decoder/ixheaacd_avq_rom.c"
   "${XAAC_ROOT}/decoder/ixheaacd_basic_funcs.c"
-  "${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c"
+  "$<$<BOOL:${RC_FALLBACK}>:${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c>"
   "${XAAC_ROOT}/decoder/ixheaacd_bitbuffer.c"
   "${XAAC_ROOT}/decoder/ixheaacd_block.c"
   "${XAAC_ROOT}/decoder/ixheaacd_channel.c"
