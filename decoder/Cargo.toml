@@ -5,6 +5,7 @@ edition = "2024"
 
 [lib]
 crate-type = ["staticlib", "rlib"]
+bench = false
 
 [features]
 fallback = [] # Stub all functions with legacy impl, for testing only
@@ -13,11 +14,11 @@ integration = [] # Export Rust functions as C-compatible API for integration tes
 [dependencies]
 
 [dev-dependencies]
-divan = "0.1"
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [build-dependencies]
 bindgen = "0.72"
 
 [[bench]]
-name = "scale_down_bench"
+name = "windowing_bench"
 harness = false

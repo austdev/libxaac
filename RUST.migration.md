@@ -75,10 +75,10 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
 1. ISOLATE
         →  Identify isolated set of C functions suitable for next migration cycle
     ↓
-2. STUB
-        →  Create Rust wrappers that calling original C code via FFI
+2. PROTOTYPE
+        →  Create Rust prototypes that calling original C code via FFI
     ↓
-3. TESTS
+3. UNIT TESTS
         →  Write comprehensive unit tests on the Rust
     ↓
 4. IMPLEMENT
@@ -95,7 +95,7 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
 | Phase | Input | Output | Validation |
 | ----- | ----- | ------ | ---------- |
 | **1. Isolate** | C codebase | Function candidates | Dependency analysis |
-| **2. Stub** | C signatures | Rust signatures/wrappers | Compilation `cargo build` |
+| **2. Prototype** | C signatures | Rust signatures | Compilation `cargo check` |
 | **3. Unit tests** | Function behavior | Unit test suite | `cargo test -F fallback` |
 | **4. Implement** | Test suite | Pure Rust implementation | Tests pass `cargo test` |
 | **5. Integrate** | Rust functions | C-compatible API | Integration tests `cmake build` |
@@ -131,9 +131,9 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
 
 ---
 
-### Phase 2: Stub Functions with FFI
+### Phase 2: Prototype Rust Functions
 
-**Goal**: Develop signatures of Rust functions that satisfy both sides. Such functions should be ready for wrapping (redirecting) into original C functions.
+**Goal**: Develop signatures of Rust functions that satisfy both sides. Such functions should be ready for wrapping (redirecting) into original C functions using FFI, and at the same time, they must be safe to call from the Rust idiomatic code.
 
 #### Step 2.1: Add the header to Bindgen (build.rs)
 
@@ -160,7 +160,7 @@ cd decoder
 cargo build --features fallback
 ```
 
-#### Step 2.2: Create Rust wrapper
+#### Step 2.2: Create Rust functions
 
 Avoid using C types or C defines in the signature of Rust function - remember, in the future, this function will only be used in the Rust code. Also remove the `ixheaacd_`  prefix from the function name - it will be part of the Rust module name.
 
@@ -559,10 +559,10 @@ perf report
 This migration process provides a **systematic, low-risk approach** to transitioning libxaac from C to Rust:
 
 1. ✅ **Isolate** - Identify migration candidates
-2. ✅ **Stub** - Create FFI wrappers with bindgen
+2. ✅ **Prototype** - Create idiomatic Rust prototypes using FFI wrappers inside
 3. ✅ **Test** - Comprehensive unit test coverage
 4. ✅ **Implement** - Pure Rust with test validation
-5. ✅ **Export** - C-compatible API with integration tests
+5. ✅ **Integrate** - C-compatible API with integration tests
 
 **Key Success Factors:**
 

@@ -6,8 +6,6 @@
 #[allow(dead_code)]
 const ADJ_SCALE: i32 = 11;
 
-use std::mem;
-
 // ============================================================================
 // Fixed-point DSP operations extension trait
 // ============================================================================
@@ -40,48 +38,45 @@ impl FixedPointOps for i32 {
     }
 }
 
- #[repr(C)]  // remove this after migration
- #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ #[derive(Clone, Copy)]
  pub struct OffsetLengths {
-     pub lfac: i32,          // FAC (Forward Aliasing Cancellation) length
-     pub n_flat_ls: i32,     // Flat region length (left side)
-     pub n_trans_ls: i32,    // Transition region length (left side)
-     pub n_long: i32,        // Long block length (full frame)
-     pub n_short: i32,       // Short block length (1/8 of frame)
+     pub lfac: usize,          // FAC (Forward Aliasing Cancellation) length
+     pub n_flat_ls: usize,     // Flat region length (left side)
+     pub n_trans_ls: usize,    // Transition region length (left side)
+     pub n_long: usize,        // Long block length (full frame)
+     pub n_short: usize,       // Short block length (1/8 of frame)
  }
 
  #[allow(dead_code)]
  impl OffsetLengths {
 
-     /// Borrow as C struct (zero-cost, no copy)
-     unsafe fn as_c_ref(&self) -> &crate::gen_ixheaacd_ref::offset_lengths {
-         unsafe { &*(self as *const Self as *const crate::gen_ixheaacd_ref::offset_lengths) }
-     }
+    /// Copy as C struct
+    fn as_c_struct(&self) -> crate::gen_ixheaacd_ref::offset_lengths {
+        crate::gen_ixheaacd_ref::offset_lengths {
+            lfac: self.lfac as std::os::raw::c_int,
+            n_flat_ls: self.n_flat_ls as std::os::raw::c_int,
+            n_trans_ls: self.n_trans_ls as std::os::raw::c_int,
+            n_long: self.n_long as std::os::raw::c_int,
+            n_short: self.n_short as std::os::raw::c_int,
+        }
+    }
 
-     /// Borrow mutably as C struct (zero-cost, no copy)
-    #[allow(invalid_reference_casting)]
-     unsafe fn as_c_mut(&self) -> &mut crate::gen_ixheaacd_ref::offset_lengths {
-         unsafe {
-            let ptr = self as *const Self as *const crate::gen_ixheaacd_ref::offset_lengths;
-            &mut *(ptr as *mut crate::gen_ixheaacd_ref::offset_lengths)
+     /// Create from C struct 
+    pub unsafe fn from_c_struct(c: *const crate::gen_ixheaacd_ref::offset_lengths) -> Self {
+        unsafe { 
+            Self {
+                lfac: (*c).lfac as usize,
+                n_flat_ls: (*c).n_flat_ls as usize,
+                n_trans_ls: (*c).n_trans_ls as usize,
+                n_long: (*c).n_long as usize,
+                n_short: (*c).n_short as usize,
             }
+        }
      }
 
-     /// Create from C struct reference (zero-cost, no copy)
-     pub fn from_c_ref(c: &crate::gen_ixheaacd_ref::offset_lengths) -> &Self {
-         unsafe { &*(c as *const crate::gen_ixheaacd_ref::offset_lengths as *const Self) }
-     }
+}
 
-     /// Create from mutable C struct reference (zero-cost, no copy)
-     unsafe fn from_c_mut(c: &mut crate::gen_ixheaacd_ref::offset_lengths) -> &mut Self {
-         unsafe { &mut *(c as *mut crate::gen_ixheaacd_ref::offset_lengths as *mut Self) }
-     }
- }
 
- const _: () = {  // Safety: OffsetLengths has #[repr(C)] and identical layout
-     assert!(mem::size_of::<OffsetLengths>() == mem::size_of::<crate::gen_ixheaacd_ref::offset_lengths>());
-     assert!(mem::align_of::<OffsetLengths>() == mem::align_of::<crate::gen_ixheaacd_ref::offset_lengths>());
- };
 
 // ============================================================================
 // Function stubs from ixheaacd_vec_baisc_ops.h (in order)
@@ -218,7 +213,7 @@ pub fn windowing_long1(
 /// incorporating FAC data (Forward Aliasing Cancellation).
 ///
 /// # Frame Regions
-/// Controlled by `ixheaacd_drc_offset`:
+/// Controlled by `offset`:
 /// 1. **Flat left** `[0 .. n_flat_ls + lfac)`: Copy overlap buffer
 /// 2. **Transition** `[n_flat_ls + lfac .. n_flat_ls + n_trans_ls)`: Windowed IMDCT + FAC
 /// 3. **Flat middle** `[n_flat_ls + n_trans_ls .. n_flat_ls + 3*lfac)`: Direct IMDCT + FAC
@@ -229,7 +224,7 @@ pub fn windowing_long1(
 /// WORD8 ixheaacd_windowing_long2(WORD32 *src1, const WORD32 *win_fwd,
 ///                                WORD32 *fac_data_out, WORD32 *over_lap,
 ///                                WORD32 *p_out_buffer,
-///                                offset_lengths *ixheaacd_drc_offset,
+///                                offset_lengths *offset,
 ///                                WORD8 shiftp, WORD8 shift_olap, WORD8 fac_q);
 /// ```
 pub fn windowing_long2(
@@ -238,16 +233,16 @@ pub fn windowing_long2(
     fac_data_out: &[i32],                // FAC transition data (input only, length: lfac * 2)
     over_lap: &[i32],                    // Overlap buffer from previous frame (n_flat_ls + lfac)
     dest: &mut [i32],            // Output buffer (n_long samples)
-    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_trans_ls, n_long)
+    offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_trans_ls, n_long)
     shiftp: i8,                          // Q-format of current IMDCT (src1)
     shift_olap: i8,                      // Q-format of overlap buffer
     fac_q: i8,                           // Q-format of FAC data
 ) -> i8  // Returns Q-format of output buffer
 {
-    let n_long = ixheaacd_drc_offset.n_long as usize;
-    let n_trans_ls = ixheaacd_drc_offset.n_trans_ls as usize;
-    let lfac = ixheaacd_drc_offset.lfac as usize;
-    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
+    let n_long = offset.n_long as usize;
+    let n_trans_ls = offset.n_trans_ls;
+    let lfac = offset.lfac;
+    let n_flat_ls = offset.n_flat_ls;
 
     assert_eq!(src1.len(), n_long, "source buffer must have at least n_long samples");
     assert_eq!(dest.len(), n_long, "output buffer must have at least n_long samples");
@@ -257,13 +252,14 @@ pub fn windowing_long2(
 
     #[cfg(feature = "fallback")]
     unsafe {
+        let mut ixheaacd_drc_offset = offset.as_c_struct();
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             fac_data_out.as_ptr() as *mut i32,
             over_lap.as_ptr() as *mut i32,
             dest.as_mut_ptr(),
-            ixheaacd_drc_offset.as_c_mut(),
+            &mut ixheaacd_drc_offset,
             shiftp,
             shift_olap,
             fac_q,
@@ -397,7 +393,7 @@ pub fn windowing_long2(
 /// WORD8 ixheaacd_windowing_long3(WORD32 *src1, const WORD32 *win_fwd,
 ///                                WORD32 *over_lap, WORD32 *p_out_buffer,
 ///                                const WORD32 *win_rev,
-///                                offset_lengths *ixheaacd_drc_offset,
+///                                offset_lengths *offset,
 ///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
 pub fn windowing_long3(
@@ -406,14 +402,14 @@ pub fn windowing_long3(
     over_lap: &[i32],                    // Overlap buffer from previous frame
     dest: &mut [i32],            // Output buffer
     win_rev: &[i32],                     // Reverse window coefficients
-    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
+    offset: &OffsetLengths,  // Frame geometry
     shiftp: i8,                          // Q-format of current IMDCT
     shift_olap: i8,                      // Q-format of overlap buffer
 ) -> i8  // Returns Q-format of output buffer
 {
-    let n_long = ixheaacd_drc_offset.n_long as usize;
-    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
-    let n_trans_ls = ixheaacd_drc_offset.n_trans_ls as usize;
+    let n_long = offset.n_long;
+    let n_flat_ls = offset.n_flat_ls;
+    let n_trans_ls = offset.n_trans_ls;
     assert_eq!(src1.len(), n_long, "source buffer must have at least n_long samples");
     assert_eq!(dest.len(), n_long, "output buffer must have at least n_long samples");
     assert!(over_lap.len() >= n_flat_ls + n_trans_ls, "overlap buffer too small");
@@ -422,14 +418,15 @@ pub fn windowing_long3(
 
     #[cfg(feature = "fallback")]
     unsafe {
-        let win_rev = win_rev.as_ptr().add(n_trans_ls as usize - 1);
+        let mut ixheaacd_drc_offset = offset.as_c_struct();
+        let win_rev = win_rev.as_ptr().add(n_trans_ls - 1);
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long3(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr(),
             over_lap.as_ptr() as *mut i32,
             dest.as_mut_ptr(),
             win_rev as *mut i32,
-            ixheaacd_drc_offset.as_c_mut(),
+            &mut ixheaacd_drc_offset,
             shiftp,
             shift_olap,
         );
@@ -515,21 +512,21 @@ pub fn windowing_long3(
 /// # C signature
 /// ```c
 /// VOID ixheaacd_windowing_short1(WORD32 *src1, WORD32 *src2, WORD32 *fp,
-///                                offset_lengths *ixheaacd_drc_offset,
+///                                offset_lengths *offset,
 ///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
 pub fn windowing_short1(
     src1: &[i32],                        // Current IMDCT output (short block)
     src2: &[i32],                        // Window coefficients
     fp: &mut [i32],                      // In/Out overlap buffer (modified in-place)
-    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_short)
+    offset: &OffsetLengths,  // Frame geometry (lfac, n_flat_ls, n_short)
     shiftp: i8,                          // Q-format of current IMDCT
     shift_olap: i8,                      // Q-format of overlap buffer (fp)
 )
 {
-    let lfac = ixheaacd_drc_offset.lfac as usize;
-    let n_short = ixheaacd_drc_offset.n_short as usize;
-    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
+    let lfac = offset.lfac;
+    let n_short = offset.n_short;
+    let n_flat_ls = offset.n_flat_ls;
 
     assert_eq!(src1.len(), n_short, "src1 must have n_short samples");
     assert_eq!(src2.len(), n_short, "src2 must have n_short samples");
@@ -537,11 +534,12 @@ pub fn windowing_short1(
 
     #[cfg(feature = "fallback")]
     unsafe {
+        let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
             src1.as_ptr() as *mut i32,
             src2.as_ptr() as *mut i32,
             fp.as_mut_ptr(),
-            ixheaacd_drc_offset.as_c_mut(),
+            &mut ixheaacd_drc_offset,
             shiftp,
             shift_olap,
         );
@@ -592,20 +590,20 @@ pub fn windowing_short1(
 /// # C signature
 /// ```c
 /// VOID ixheaacd_windowing_short2(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
-///                                offset_lengths *ixheaacd_drc_offset,
+///                                offset_lengths *offset,
 ///                                WORD8 shiftp, WORD8 shift_olap);
 /// ```
 pub fn windowing_short2(
     src1: &[i32],                        // Current IMDCT output (short block)
     win_fwd: &[i32],                     // Window coefficients (n_short samples)
     fp: &mut [i32],                      // In/Out overlap buffer
-    ixheaacd_drc_offset: &OffsetLengths,  // Frame geometry
+    offset: &OffsetLengths,  // Frame geometry
     shiftp: i8,                          // Q-format of current IMDCT
     shift_olap: i8,                      // Q-format of overlap buffer
 )
 {
-    let n_short = ixheaacd_drc_offset.n_short as usize;
-    let n_flat_ls = ixheaacd_drc_offset.n_flat_ls as usize;
+    let n_short = offset.n_short;
+    let n_flat_ls = offset.n_flat_ls;
 
     assert!(src1.len() >= n_short / 2, "src1 must have at least n_short/2 samples");
     assert!(win_fwd.len() >= n_short, "win_fwd must have at least n_short samples");
@@ -613,11 +611,12 @@ pub fn windowing_short2(
 
     #[cfg(feature = "fallback")]
     unsafe {
+        let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
             src1.as_ptr() as *mut i32,
             win_fwd.as_ptr() as *mut i32,
             fp.as_mut_ptr(),
-            ixheaacd_drc_offset.as_c_mut(),
+            &mut ixheaacd_drc_offset,
             shiftp,
             shift_olap,
         );
@@ -1187,7 +1186,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let fac_data = create_test_fac_data();
         let over_lap = create_test_overlap_long2();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long2(
             &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
@@ -1207,7 +1206,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let fac_data = create_test_fac_data();
         let over_lap = create_test_overlap_long2();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long2(
             &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
@@ -1227,7 +1226,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let fac_data = create_test_fac_data();
         let over_lap = create_test_overlap_long2();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long2(
             &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
@@ -1247,7 +1246,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let fac_data = create_test_fac_data();
         let over_lap = create_test_overlap_long2();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long2(
             &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
@@ -1267,7 +1266,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let fac_data = create_test_fac_data();
         let over_lap = create_test_overlap_long2();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long2(
             &src1, &win_fwd, &fac_data, &over_lap, &mut p_out_buffer,
@@ -1294,7 +1293,7 @@ mod tests {
         let src1 = create_test_src1_long2();
         let win_fwd = create_test_window_len32();
         let over_lap = create_test_overlap_long3();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long3(
             &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
@@ -1313,7 +1312,7 @@ mod tests {
         let src1 = create_test_src1_long2();
         let win_fwd = create_test_window_len32();
         let over_lap = create_test_overlap_long3();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long3(
             &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
@@ -1332,7 +1331,7 @@ mod tests {
         let src1 = create_test_src1_long2();
         let win_fwd = create_test_window_len32();
         let over_lap = create_test_overlap_long3();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long3(
             &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
@@ -1351,7 +1350,7 @@ mod tests {
         let src1 = create_test_src1_long2();
         let win_fwd = create_test_window_len32();
         let over_lap = create_test_overlap_long3();
-        let mut p_out_buffer = vec![0; offset.n_long as usize];
+        let mut p_out_buffer = vec![0; offset.n_long];
 
         let result_q = windowing_long3(
             &src1, &win_fwd, &over_lap, &mut p_out_buffer, &win_fwd,
@@ -1386,7 +1385,7 @@ mod tests {
         let src1 = vec![134760976, 192459648, 235105440, 86985200, 147657648, 184622976, 138333184, 109944192, 46901072, 97105280, 163566848, 114981248, 77520880, 10512288, 14358304, -114643568,
                 -184019744, -157282624, -236088256, -106367824, -217254992, -100738448, 85402512, -105615168, 133200032, -163217168, -167557232, 294838336, 288447472, 175529072, 151728032, -17404576];
         let src2 = create_test_window_len32();
-        let mut fp = vec![-206367421; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![-206367421; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 12, 14);
 
@@ -1406,7 +1405,7 @@ mod tests {
         };
         let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
         let src2 = create_test_window_len32();
-        let mut fp = vec![8000; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![8000; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 12, 16);
 
@@ -1426,7 +1425,7 @@ mod tests {
         };
         let src1 = vec![-2231040, -1453504, -8470208, -6010560, -37089856, -63401792, -99061664, -49948160, -39689344, -36031552, -45139328, -22368544, 22745568, 33116832, 35384800, 2671072, -26372288, -35004416, -23028672, -3573056, -29113216, -45877920, -55658880, -59907872, -60211552, -77955136, -38060672, -21001088, 3338240, -24066816, -17012992, -15744480];
         let src2 = create_test_window_len32();
-        let mut fp = vec![3000; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![3000; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 16, 14);
 
@@ -1446,7 +1445,7 @@ mod tests {
         };
         let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
         let src2 = create_test_window_len32();
-        let mut fp = vec![68186432; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![68186432; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 18, 14);
 
@@ -1477,7 +1476,7 @@ mod tests {
             13176960, 118530360, 223600288, 328129056, 431869696, 534568800, 635979456, 735858880,
             833964544, 930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623
         ];
-        let mut fp = vec![100; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![100; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 14, 16);
 
@@ -1503,7 +1502,7 @@ mod tests {
         };
         let src1 = vec![i32::MAX / 2; 16];
         let src2 = vec![i32::MAX / 4; 16];
-        let mut fp = vec![i32::MAX / 4; (offset.n_flat_ls + offset.lfac) as usize];
+        let mut fp = vec![i32::MAX / 4; offset.n_flat_ls + offset.lfac];
 
         windowing_short1(&src1, &src2, &mut fp, &offset, 12, 16);
 
@@ -1538,7 +1537,7 @@ mod tests {
         };
         let src1 = vec![-2231040, -1453504, -8470208, -6010560, -37089856, -63401792, -99061664, -49948160, -39689344, -36031552, -45139328, -22368544, 22745568, 33116832, 35384800, 2671072, -26372288, -35004416, -23028672, -3573056, -29113216, -45877920, -55658880, -59907872, -60211552, -77955136, -38060672, -21001088, 3338240, -24066816, -17012992, -15744480];
         let win_fwd = create_test_window_len32();
-        let mut fp = vec![-4606648; (offset.n_flat_ls + offset.n_short) as usize];
+        let mut fp = vec![-4606648; offset.n_flat_ls + offset.n_short];
 
         windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 16);
 
@@ -1559,7 +1558,7 @@ mod tests {
         let src1 = vec![134760976, 192459648, 235105440, 86985200, 147657648, 184622976, 138333184, 109944192, 46901072, 97105280, 163566848, 114981248, 77520880, 10512288, 14358304, -114643568,
                 -184019744, -157282624, -236088256, -106367824, -217254992, -100738448, 85402512, -105615168, 133200032, -163217168, -167557232, 294838336, 288447472, 175529072, 151728032, -17404576];
         let win_fwd = create_test_window_len32();
-        let mut fp = vec![77680672; (offset.n_flat_ls + offset.n_short) as usize];
+        let mut fp = vec![77680672; offset.n_flat_ls + offset.n_short];
 
         windowing_short2(&src1, &win_fwd, &mut fp, &offset, 15, 14);
 
@@ -1579,7 +1578,7 @@ mod tests {
         };
         let src1 = vec![112770912, 221991872, 155566144, 101234304, 112886528, -8768352, -35112000, -109608256, -149689984, -247050848, -252940448, -226440160, -214432576, -260521152, -121165184, -95656064, 57978112, 128177856, 41645280, 156887200, 97545120, -12161216, -51263168, -51276128, -32786144, -57784416, -49523424, -19171456, 5140672, -20268256, -5941088, -12329696];
         let win_fwd = create_test_window_len32();
-        let mut fp = vec![68186432; (offset.n_flat_ls + offset.n_short) as usize];
+        let mut fp = vec![68186432; offset.n_flat_ls + offset.n_short];
 
         windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 14);
 
@@ -1603,7 +1602,7 @@ mod tests {
         };
         let src1 = vec![i32::MAX / 2; 8];
         let win_fwd = vec![i32::MAX / 2; 16];
-        let mut fp = vec![i32::MAX / 2; (offset.n_flat_ls + offset.n_short) as usize];
+        let mut fp = vec![i32::MAX / 2; offset.n_flat_ls + offset.n_short];
 
         windowing_short2(&src1, &win_fwd, &mut fp, &offset, 14, 14);
 

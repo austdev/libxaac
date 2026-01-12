@@ -2,151 +2,217 @@
 
 ## Overview
 
-This benchmark suite uses [Divan](https://github.com/nvzqz/divan) to measure the performance of old and new functions across various scenarios.
+This benchmark suite uses [Criterion](https://github.com/bheisler/criterion.rs) to measure the performance of migrated Rust functions against the original C implementation.
 
 ## Running Benchmarks
 
-Please note that the laptop must be connected to an external power source to eliminate the influence of CPU throttling.
+**Important:** The laptop must be connected to an external power source to eliminate CPU throttling.
 
 ### Basic Usage
 
 ```bash
-# Run all benchmarks
 cd decoder
-cargo bench
 
 # Run benchmarks matching a pattern
-cargo bench -- scale_down_right
+cargo bench -- "windowing_long1"
+
+# Run specific benchmark
+cargo bench -- "windowing_long1/1024_shift1_gt"
+
+# List all available benchmarks (test mode)
+cargo bench -- --test
 ```
 
-## Buffer Sizes Explained
-
-### Why These Sizes?
-
-| Size | Significance | Use Case |
-| ---- | ------------ | -------- |
-| 8 | AVX2 SIMD boundary (8×i32) | Minimum efficient SIMD size |
-| 16 | 2× AVX2 vectors | Common loop unrolling target |
-| 64 | Cache line aligned | L1 cache efficiency test |
-| 128 | AAC short block size | Real decoder scenario |
-| 512 | Half of long block | IMDCT overlap buffer |
-| 1024 | AAC long block size | Full frame processing |
-
 ---
 
-## Expected Performance Characteristics
+## Comparing Rust vs C Implementation
 
-### Right Shift (Fast Path)
+### Prerequisites
 
-- **Best case**: ~0.5-1 ns/element on modern CPUs
-- **SIMD potential**: 8× speedup with AVX2
-- **Bottleneck**: Memory bandwidth for large buffers
+**The C library must be built in release configuration before running fallback benchmarks.**
 
-### Left Shift with Saturation (Slow Path)
+```bash
+# Build C library in release mode (from project root)
+cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja -DRC_FALLBACK
+cmake --build build --config Release
+```
 
-- **Best case**: ~1-2 ns/element (saturation checks add overhead)
-- **SIMD challenges**: Saturation logic is complex
-- **Bottleneck**: Branch misprediction on mixed saturation
+### Step 1: Save C Implementation Baseline
 
-### scale_down_adj() (Additional Overhead)
+Run benchmarks with the `fallback` feature enabled to use the original C implementation via FFI:
 
-- **Overhead**: +0.2-0.5 ns/element for saturating add
-- **Expected**: 20-30% slower than base scale_down()
+```bash
+# Save baseline for specific benchmark group
+cargo bench -F fallback -- --save-baseline c_impl "windowing_long1"
 
----
+# Save baseline for single benchmark
+cargo bench -F fallback -- --save-baseline c_impl "windowing_long1/1024_shift1_gt"
+```
 
-## Interpreting Results
+### Step 2: Compare Rust Implementation
+
+Run benchmarks without the `fallback` feature to use the pure Rust implementation and compare against the saved baseline:
+
+```bash
+# Compare specific benchmark group
+cargo bench -- --baseline c_impl "windowing_long1"
+
+# Compare single benchmark
+cargo bench -- --baseline c_impl "windowing_long1/1024_shift1_gt"
+```
 
 ### Example Output
 
 ```text
-Timer precision: 41 ns
-scale_down_bench           fastest       │ slowest       │ median        │ mean
-├─ scale_down_right_shift
-│  ├─ len8                 45.83 ns      │ 52.08 ns      │ 46.25 ns      │ 46.83 ns
-│  ├─ len16                87.08 ns      │ 95.42 ns      │ 88.33 ns      │ 89.17 ns
-│  ├─ len64                325.0 ns      │ 358.3 ns      │ 331.7 ns      │ 335.8 ns
-│  ├─ len128               641.7 ns      │ 708.3 ns      │ 658.3 ns      │ 665.0 ns
-│  ├─ len512               2.525 µs      │ 2.791 µs      │ 2.583 µs      │ 2.625 µs
-│  ╰─ len1024              5.041 µs      │ 5.583 µs      │ 5.166 µs      │ 5.250 µs
+windowing_long1/1024_shift1_gt
+                        time:   [1.0409 µs 1.0451 µs 1.0498 µs]
+                        change: [+3.4014% +5.5436% +7.0222%] (p = 0.00 < 0.05)
+                        Performance has regressed.
 ```
 
----
-
-## Optimization Targets
-
-### Current Implementation (Scalar)
-
-Expected performance:
-    - Right shift: ~0.5-1.0 ns/element
-    - Left shift: ~1.0-2.0 ns/element
-    - With adjustment: +0.2-0.5 ns/element
-
-### SIMD Optimized (AVX2)
-
-Expected improvement:
-    - Right shift: 4-8× faster for buffers ≥ 16
-    - Left shift: 2-4× faster (saturation overhead)
-    - Best for: len ≥ 64
-
-### Memory Bound Threshold
-
-For large buffers (≥ 1024), expect:
-    - Memory bandwidth: ~10-20 GB/s
-    - Cache effects: L1 < 32KB, L2 < 256KB
-    - DRAM latency: ~50-100 ns
+**Interpreting results:**
+- **Negative change** = Rust is faster than C
+- **Positive change** = Rust is slower than C
+- **p-value < 0.05** = statistically significant difference
 
 ---
 
-## Comparison with C Implementation
+## Benchmark Groups
 
-### To benchmark C version
-
-1. Build C library in release mode
-2. Link benchmarks against C functions
-3. Run identical workloads
-4. Compare median times
-
-### Expected Results
-
-| Metric | C (gcc -O3) | Rust (release) | Notes |
-| ------ | ----------- | -------------- | ----- |
-| Right shift | Baseline | 0.95-1.05× | Similar performance |
-| Left shift | Baseline | 0.90-1.10× | Rust may be faster due to LLVM |
-| With saturation | Baseline | 0.95-1.05× | Similar branch prediction |
-| SIMD optimized | Baseline | 1.0-1.5× | Rust SIMD can be faster |
+| Group | Description | Functions |
+|-------|-------------|-----------|
+| `combine_fac` | FAC buffer combination | `combine_fac` |
+| `windowing_long1` | Long block overlap-add | `windowing_long1` |
+| `windowing_long2` | Long block with FAC | `windowing_long2` |
+| `windowing_long3` | Long block transition | `windowing_long3` |
+| `windowing_short1` | Short block initialization | `windowing_short1` |
+| `windowing_short2` | Short block overlap-add | `windowing_short2` |
+| `windowing_short3` | Short block final stage | `windowing_short3` |
+| `windowing_short4` | Short block with windowing flag | `windowing_short4` |
+| `scenario` | Real-world IMDCT scenarios | Mixed |
+| `scale_down` | Buffer scaling operations | `scale_down` |
+| `scale_down_adj` | Adjusted scaling | `scale_down_adj` |
 
 ---
 
-## Profiling Integration
+## Buffer Sizes
 
-### CPU Profiling with perf
+| Size | Significance | Use Case |
+|------|--------------|----------|
+| 48 | Smallest FAC length | 768-sample TD short |
+| 64 | Short FAC length | 1024-sample TD short |
+| 96 | Short block (768) | `n_short` for 768-sample frames |
+| 128 | Short block (1024) | `n_short` for 1024-sample frames |
+| 768 | Long frame | USAC 768-sample mode |
+| 1024 | Long frame | Standard AAC frame |
+
+---
+
+## Advanced Usage
+
+### Adjusting Sample Size
 
 ```bash
-# Run benchmarks with perf
-cargo bench -- scale_down_right_shift_len1024 --profile-time 10
+# Quick run with fewer samples
+cargo bench -- --sample-size 50
 
-# Analyze hotspots
-perf record -g cargo bench -- scale_down_right_shift_len1024
-perf report
+# Thorough run with more samples
+cargo bench -- --sample-size 500
 ```
 
-### Cachegrind Analysis
+### Warm-up and Measurement Time
 
 ```bash
-# Run under Valgrind
-valgrind --tool=cachegrind --cache-sim=yes \
-  cargo bench -- scale_down_right_shift_len1024 --bench
+# Longer warm-up for stable results
+cargo bench -- --warm-up-time 5
 
-# Analyze cache misses
-cg_annotate cachegrind.out.*
+# Extended measurement time
+cargo bench -- --measurement-time 10
+```
+
+### Output Formats
+
+```bash
+# Verbose output
+cargo bench -- --verbose
+
+# No plots (faster)
+cargo bench -- --noplot
 ```
 
 ---
 
-### CI Integration
+## HTML Reports
 
-Add to `.github/workflows/benchmark.yml`:
+Criterion generates HTML reports in `target/criterion/`. Open `target/criterion/report/index.html` in a browser to view:
+
+- Performance history over time
+- Violin plots showing distribution
+- Comparison charts between baselines
+- Statistical analysis details
+
+---
+
+## Expected Performance
+
+### Windowing Functions
+
+| Function | Expected Time (1024 samples) | Notes |
+|----------|------------------------------|-------|
+| `windowing_long1` | 1-2 µs | Most common path |
+| `windowing_long2` | 2-3 µs | FAC processing overhead |
+| `windowing_long3` | 1-2 µs | Transition regions |
+| `windowing_short*` | 100-300 ns | Smaller buffers |
+
+### Scale Down Functions
+
+| Operation | Expected Time | Notes |
+|-----------|---------------|-------|
+| Right shift (1024) | 200-400 ns | Simple bit shift |
+| Left shift (1024) | 400-800 ns | Saturation checks |
+| With adjustment | +20-30% | Additional add operation |
+
+---
+
+## Troubleshooting
+
+### High Variance in Results
+
+**Symptoms:** Large confidence intervals, inconsistent results
+
+**Solutions:**
+```bash
+# Windows: Set high priority
+start /high cargo bench
+
+# Increase sample size
+cargo bench -- --sample-size 200
+
+# Disable CPU frequency scaling (Linux)
+sudo cpupower frequency-set --governor performance
+```
+
+### Baseline Not Found
+
+**Error:** `Baseline 'c_impl' not found`
+
+**Solution:** Run the baseline save command first:
+```bash
+cargo bench -F fallback -- --save-baseline c_impl
+```
+
+### Unexpectedly Slow Performance
+
+**Checks:**
+1. Verify release build: `cargo bench` automatically uses release
+2. Check C library is release: rebuild with `CMAKE_BUILD_TYPE=Release`
+3. Use native CPU features: `RUSTFLAGS="-C target-cpu=native" cargo bench`
+
+---
+
+## CI Integration
+
+### GitHub Actions Example
 
 ```yaml
 name: Benchmark
@@ -155,148 +221,66 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: cargo bench
-      - uses: benchmark-action/github-action-benchmark@v1
+      - uses: actions/checkout@v4
+
+      # Build C library for baseline
+      - name: Build C library
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+
+      # Save C baseline
+      - name: Save C baseline
+        run: cargo bench -F fallback -- --save-baseline c_impl
+
+      # Compare Rust implementation
+      - name: Compare Rust vs C
+        run: cargo bench -- --baseline c_impl
+
+      # Upload results
+      - uses: actions/upload-artifact@v4
         with:
-          tool: 'cargo'
-          output-file-path: target/criterion/output.txt
+          name: benchmark-results
+          path: target/criterion/
 ```
 
 ---
 
-## Future Optimizations
+## Adding New Benchmarks
 
-### 1. SIMD Implementation
+```rust
+fn my_new_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("my_group");
 
-**Target:** 4-8× speedup for large buffers
+    let src = audio_samples(128);
+    let mut dest = vec![0i32; 128];
 
-**Implementation:**
-    - AVX2 for x86_64 (8×i32 per instruction)
-    - NEON for ARM (4×i32 per instruction)
-    - Portable SIMD with `std::simd`
+    group.bench_function("my_function", |b| {
+        b.iter(|| {
+            my_function(&src, &mut dest);
+            black_box(&dest);
+        });
+    });
 
-### 2. Inline Optimization
+    group.finish();
+}
 
-**Target:** Eliminate function call overhead
-
-**Implementation:**
-    - Mark hot paths with `#[inline(always)]`
-    - Use const generics for small buffers
-
-### 3. Branch Prediction
-
-**Target:** Reduce misprediction on saturation
-
-**Implementation:**
-    - Likely/unlikely hints
-    - Branch-free saturation using bit tricks
-
-### 4. Memory Prefetching
-
-**Target:** Hide DRAM latency
-
-**Implementation:**
-    - Software prefetch hints
-    - Streaming stores for large buffers
-
----
-
-## Troubleshooting
-
-### High Variance in Results
-
-**Symptoms:** Large difference between fastest and slowest times
-
-**Causes:**
-    - CPU frequency scaling
-    - Background processes
-    - Thermal throttling
-
-**Solutions:**
-
-```bash
-# Disable CPU frequency scaling
-sudo cpupower frequency-set --governor performance
-
-# Isolate CPUs
-taskset -c 0 cargo bench
-
-# Increase sample size
-cargo bench -- --sample-size 1000
+// Add to criterion_group! macro
+criterion_group!(benches, ..., my_new_benchmark);
 ```
 
-### Unexpectedly Slow Performance
-
-**Symptoms:** Much slower than expected
-
-**Checks:**
-
-1. Verify release build: `cargo bench` (not `cargo test`)
-2. Check compiler flags: `RUSTFLAGS="-C target-cpu=native"`
-3. Disable debug assertions
-4. Profile with `perf` to find bottlenecks
+**Guidelines:**
+1. Use `black_box()` to prevent optimization
+2. Initialize data outside the benchmark closure
+3. Use realistic data from AAC/USAC specifications
+4. Name benchmarks with format: `{size}_{variant}`
+5. Group related benchmarks together
 
 ---
 
 ## References
 
-- [Divan Documentation](https://docs.rs/divan/)
-- [Divan GitHub](https://github.com/nvzqz/divan)
+- [Criterion Documentation](https://bheisler.github.io/criterion.rs/book/)
+- [Criterion GitHub](https://github.com/bheisler/criterion.rs)
 - [Rust Performance Book](https://nnethercote.github.io/perf-book/)
-- [Intel Intrinsics Guide](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/)
-
----
-
-## Benchmark Maintenance
-
-### Adding New Benchmarks
-
-```rust
-#[divan::bench]
-fn my_new_benchmark(bencher: Bencher) {
-    let src = vec![1000; 128];
-    let mut dest = vec![0; 128];
-    
-    bencher.bench_local(|| {
-        scale_down(&mut dest, &src, 5, 2);
-        divan::black_box(&dest);
-    });
-}
-```
-
-**Guidelines:**
-
-1. ✅ Use `divan::black_box()` to prevent optimization
-2. ✅ Initialize data outside `bench_local()`
-3. ✅ Use realistic data patterns
-4. ✅ Name benchmarks descriptively
-5. ✅ Group related benchmarks
-6. ✅ Document expected performance
-
-### Place Benchmarks Into Separated Directory
-
-Rust's Cargo build system has special handling for the benches/ directory:
-
-```text
- project/
- ├── src/           # Library code (compiled once)
- ├── tests/         # Integration tests (each file = separate binary)
- ├── benches/       # Benchmarks (each file = separate binary)
- └── examples/      # Example programs
-```
-
-**Key differences:**
-
- | Location | Compilation | Purpose | Run Command |
- | --------- | ----------- | -------------- | ------------------ |
- | src/ | Library crate | Production code | cargo build |
- | tests/ | Test binaries | Integration tests | cargo test | 
- | benches/ | Benchmark binaries | Performance tests | cargo bench |
-
-**Benefits:**
-
- 1. ✅ Benchmarks don't increase library compilation time
- 2. ✅ Benchmark dependencies (Divan) don't pollute library deps
- 3. ✅ Can have multiple benchmark files
- 4. ✅ Each benchmark is independently compiled and run
+- [AAC/USAC Specification](docs/LIBXAAC-Enc-API.pdf)

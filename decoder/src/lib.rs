@@ -117,16 +117,13 @@ mod integration_test {
             return 0;
         }
         unsafe {
-            let offset = OffsetLengths::from_c_ref(&*ixheaacd_drc_offset);
-            let n_long = offset.n_long as usize;
-            let lfac = offset.lfac as usize;
-
-            let src1_slice = slice::from_raw_parts(src1, n_long);
-            let win_fwd_slice = slice::from_raw_parts(win_fwd, n_long);
-            let fac_slice = slice::from_raw_parts(fac_data_out, lfac * 2);
-            let overlap_slice = slice::from_raw_parts(over_lap, lfac + offset.n_flat_ls as usize);
-            let dest_slice = slice::from_raw_parts_mut(p_out_buffer, n_long);
-            super::ixheaacd::windowing_long2(src1_slice, win_fwd_slice, fac_slice, overlap_slice, dest_slice, offset, shift1, shift2, shift3)
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            let src1_slice = slice::from_raw_parts(src1, offset.n_long);
+            let win_fwd_slice = slice::from_raw_parts(win_fwd, offset.n_long);
+            let fac_slice = slice::from_raw_parts(fac_data_out, offset.lfac * 2);
+            let overlap_slice = slice::from_raw_parts(over_lap, offset.lfac + offset.n_flat_ls);
+            let dest_slice = slice::from_raw_parts_mut(p_out_buffer, offset.n_long);
+            super::ixheaacd::windowing_long2(src1_slice, win_fwd_slice, fac_slice, overlap_slice, dest_slice, &offset, shift1, shift2, shift3)
         }
     }
 
@@ -146,17 +143,14 @@ mod integration_test {
             return 0;
         }
         unsafe {
-            let offset = OffsetLengths::from_c_ref(&*ixheaacd_drc_offset);
-            let n_long = offset.n_long as usize;
-            let n_trans_ls = offset.n_trans_ls as usize;
-
-            let src1_slice = slice::from_raw_parts(src1, n_long);
-            let win_fwd_slice = slice::from_raw_parts(win_fwd, n_trans_ls);
-            let overlap_slice = slice::from_raw_parts(over_lap, n_trans_ls + offset.n_flat_ls as usize);
-            let dest_slice = slice::from_raw_parts_mut(p_out_buffer, n_long);
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            let src1_slice = slice::from_raw_parts(src1, offset.n_long);
+            let win_fwd_slice = slice::from_raw_parts(win_fwd, offset.n_trans_ls);
+            let overlap_slice = slice::from_raw_parts(over_lap, offset.n_trans_ls + offset.n_flat_ls);
+            let dest_slice = slice::from_raw_parts_mut(p_out_buffer, offset.n_long);
             // C passes win_rev pointing to END, convert to beginning
-            let win_rev_slice = slice::from_raw_parts(win_rev.sub(n_trans_ls - 1), n_trans_ls);
-            super::ixheaacd::windowing_long3(src1_slice, win_fwd_slice, overlap_slice, dest_slice, win_rev_slice, offset, shift1, shift2)
+            let win_rev_slice = slice::from_raw_parts(win_rev.sub(offset.n_trans_ls - 1), offset.n_trans_ls);
+            super::ixheaacd::windowing_long3(src1_slice, win_fwd_slice, overlap_slice, dest_slice, win_rev_slice, &offset, shift1, shift2)
         }
     }
 
@@ -173,13 +167,11 @@ mod integration_test {
             return;
         }
         unsafe {
-            let offset = OffsetLengths::from_c_ref(&*ixheaacd_drc_offset);
-            let n_short = offset.n_short as usize;
-
-            let src1_slice = slice::from_raw_parts(src1, n_short);
-            let src2_slice = slice::from_raw_parts(src2, n_short);
-            let fp_slice = slice::from_raw_parts_mut(fp, (offset.n_flat_ls +offset. lfac) as usize);
-            super::ixheaacd::windowing_short1(src1_slice, src2_slice, fp_slice, offset, shiftp, shift_olap);
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            let src1_slice = slice::from_raw_parts(src1, offset.n_short);
+            let src2_slice = slice::from_raw_parts(src2, offset.n_short);
+            let fp_slice = slice::from_raw_parts_mut(fp, offset.n_flat_ls +offset. lfac);
+            super::ixheaacd::windowing_short1(src1_slice, src2_slice, fp_slice, &offset, shiftp, shift_olap);
         }
     }
 
@@ -196,13 +188,11 @@ mod integration_test {
             return;
         }
         unsafe {
-            let offset = OffsetLengths::from_c_ref(&*ixheaacd_drc_offset);
-            let n_short = offset.n_short as usize;
-
-            let src1_slice = slice::from_raw_parts(src1, n_short / 2);
-            let win_fwd_slice = slice::from_raw_parts(win_fwd, n_short);
-            let fp_slice = slice::from_raw_parts_mut(fp, n_short + offset.n_flat_ls as usize);
-            super::ixheaacd::windowing_short2(src1_slice, win_fwd_slice, fp_slice, offset, shiftp, shift_olap);
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            let src1_slice = slice::from_raw_parts(src1, offset.n_short / 2);
+            let win_fwd_slice = slice::from_raw_parts(win_fwd, offset.n_short);
+            let fp_slice = slice::from_raw_parts_mut(fp, offset.n_short + offset.n_flat_ls);
+            super::ixheaacd::windowing_short2(src1_slice, win_fwd_slice, fp_slice, &offset, shiftp, shift_olap);
         }
     }
 
