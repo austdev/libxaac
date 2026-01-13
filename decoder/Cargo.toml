@@ -1,0 +1,24 @@
+[package]
+name = "decoder"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+bench = false
+
+[features]
+fallback = [] # Stub all functions with legacy impl, for testing only
+integration = [] # Export Rust functions as C-compatible API for integration test
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[build-dependencies]
+bindgen = "0.72"
+
+[[bench]]
+name = "windowing_bench"
+harness = false

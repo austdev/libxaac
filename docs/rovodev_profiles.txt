@@ -1,0 +1,60 @@
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+                                             USAC vs Other AAC Profiles
+
+
+  Feature                    AAC-LC    HE-AACv1              HE-AACv2       AAC-ELD     USAC
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  AOT                        2         5                     29             39          42
+  Core Coder                 AAC-LC    AAC-LC                AAC-LC         AAC-LD      FD + TD
+  SBR                        No        Legacy                Legacy         Optional    Enhanced
+  PS                         No        No                    Yes            No          No
+  Speech Optimization        No        No                    No             No          Yes (TD)
+  Complex Prediction         No        No                    No             No          Yes
+  Adaptive Switching         No        No                    No             No          Yes
+  Frame Sizes                1024      1024                  1024           480/512     768/1024
+  Typical Bitrate (Stereo)   128-256   48-128                32-64          64-128      48-192
+  Use Case                   Music     Music (low-bitrate)   Speech+Music   Low-delay   Universal
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ 1 USAC (AOT 42) is the most advanced AAC profile with dual coding modes
+ 2 Three modes: SWITCHED (adaptive), FD (music), TD (speech)
+ 3 Enhanced SBR provides better high-frequency reconstruction than legacy SBR
+ 4 Frame lengths: 768 or 1024 samples (vs 1024 for AAC-LC)
+ 5 Advanced features: Complex prediction, PVC, harmonic SBR, inter-TES
+ 6 Use cases: Universal - works for speech, music, and mixed content
+ 7 Bitrate range: 24 kbps (mono speech) to 192+ kbps (stereo high quality)
+ 8 eSBR ratios: 8:3, 2:1, or 4:1 upsampling for bandwidth extension
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+                                            Quick Start Recommendations
+
+                                                     For Music:
+
+
+.\xaacenc.exe -ifile:test_2MB.wav -ofile:test2_aot42.aac -aot:42 -usac:1 -br:128000 -ccfl_idx:3 -esbr:1 -harmonic_sbr:1
+
+.\xaacdec.exe -ifile:test2_aot42.aac -imeta:test2_aot42.txt -ofile:output.pcm -mp4:1
+
+
+
+                                                    For Speech:
+
+ -aot:42 -usac:2 -br:32000 -ccfl_idx:0
+
+
+                                        For Mixed Content (Podcasts, etc.):
+
+ -aot:42 -usac:0 -br:64000 -ccfl_idx:1 -tns:1 -nf:1
+
+
+                                                For Maximum Quality:
+
+ -aot:42 -usac:1 -br:192000 -ccfl_idx:3 -esbr:1 -esbr_hq:1 -harmonic_sbr:1 -pvc_enc:1 -inter_tes_enc:1 -cmpx_pred:1
+
+
+

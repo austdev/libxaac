@@ -1,0 +1,61 @@
+  Analysis of offset_lengths Struct
+
+  Purpose
+
+  The offset_lengths struct is used in the USAC (Unified Speech and Audio Coding) IMDCT 
+  (Inverse Modified Discrete Cosine Transform) windowing operations.
+  It defines the geometry of the overlap-add windows during frame transitions, particularly for:
+
+  1. LONG_START and LONG_STOP window sequences
+  2. FD (Frequency Domain) to TD (Time Domain) transitions (ACELP/TCX switching)
+  3. FAC (Forward Aliasing Cancellation) application
+
+  Field Descriptions and Value Ranges
+
+  | Field      | Description                                 | Formula       | Possible Values            |
+  |------------|---------------------------------------------|---------------|----------------------------|
+  | n_long     | Long frame length (core coder frame length) | = ccfl        | 768 or 1024                |
+  | n_short    | Short frame length                          | = n_long >> 3 | 96 (768/8) or 128 (1024/8) |
+  | lfac       | FAC (aliasing cancellation) window length   | See below     | 48, 64, 96, 128            |
+  | n_flat_ls  | Flat (passthrough) region length            | See below     | 288, 336, 384, 448         |
+  | n_trans_ls | Transition region length                    | See below     | 96, 128, 192, 256          |
+
+  Value Calculation Logic
+
+  From ixheaacd_imdct.c:615-635:
+
+  ixheaacd_drc_offset.n_long = usac_data->ccfl;       // 768 or 1024
+  ixheaacd_drc_offset.n_short = n_long >> 3;          // 96 or 128
+
+  if (td_frame_prev) {  // Previous frame was time-domain (ACELP)
+      if (window_sequence == EIGHT_SHORT_SEQUENCE)
+          lfac = n_long >> 4;    // 48 or 64
+      else
+          lfac = n_long >> 3;    // 96 or 128
+
+      n_flat_ls = (n_long - lfac * 2) >> 1;
+      n_trans_ls = lfac << 1;
+  } else {              // Previous frame was frequency-domain
+      lfac = FAC_LENGTH;  // 128 (constant)
+      n_flat_ls = (n_long - n_short) >> 1;
+      n_trans_ls = n_short;
+  }
+
+  Detailed Value Matrix
+
+  | ccfl | td_frame_prev | window_sequence | n_long | n_short | lfac | n_flat_ls | n_trans_ls |
+  |------|---------------|-----------------|--------|---------|------|-----------|------------|
+  | 1024 | false         | any             | 1024   | 128     | 128  | 448       | 128        |
+  | 1024 | true          | EIGHT_SHORT     | 1024   | 128     | 64   | 448       | 128        |
+  | 1024 | true          | other           | 1024   | 128     | 128  | 384       | 256        |
+  | 768  | false         | any             | 768    | 96      | 128  | 336       | 96         |
+  | 768  | true          | EIGHT_SHORT     | 768    | 96      | 48   | 336       | 96         |
+  | 768  | true          | other           | 768    | 96      | 96   | 288       | 192        |
+
+  Geometric Relationship
+
+  The values satisfy: n_flat_ls + n_trans_ls/2 = n_long/2
+
+  This reflects the MDCT overlap-add structure where the total window length is n_long, and the struct partitions the half-window into:
+  - Flat region (n_flat_ls): Samples passed through unchanged
+  - Transition region (n_trans_ls): Samples where windowing/crossfade occurs

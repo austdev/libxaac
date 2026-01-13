@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_WINDOWS_H
 #define IXHEAACD_WINDOWS_H
 
+#include "ixheaac_type_def.h"
+
 extern const WORD32 ixheaacd_sine_win_128[128];
 extern const WORD32 ixheaacd_sine_win_1024[1024];
 extern const WORD32 ixheaacd_sine_win_64[64];

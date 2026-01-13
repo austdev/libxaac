@@ -18,7 +18,7 @@ list(
   "${XAAC_ROOT}/decoder/ixheaacd_avq_dec.c"
   "${XAAC_ROOT}/decoder/ixheaacd_avq_rom.c"
   "${XAAC_ROOT}/decoder/ixheaacd_basic_funcs.c"
-  "${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c"
+  "$<$<BOOL:${RC_FALLBACK}>:${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c>"
   "${XAAC_ROOT}/decoder/ixheaacd_bitbuffer.c"
   "${XAAC_ROOT}/decoder/ixheaacd_block.c"
   "${XAAC_ROOT}/decoder/ixheaacd_channel.c"
@@ -137,3 +137,32 @@ else()
 endif()
 
 add_library(libxaacdec STATIC ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+
+if(RC_FALLBACK)
+    set_target_properties(libxaacdec PROPERTIES 
+        OUTPUT_NAME "libxaacdec-ref"
+    )
+else()
+    set(RUST_DECODER_LIB 
+        "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    )
+
+    # Create a custom target and command to build Rust library
+    add_custom_command(
+        COMMENT "Building Rust library decoder[${RUST_PROFILE}] .."
+        COMMAND ${CARGO_CMD}
+        OUTPUT ${RUST_DECODER_LIB}
+        WORKING_DIRECTORY "${XAAC_ROOT}/decoder"
+        DEPENDS 
+            "${XAAC_ROOT}/decoder/Cargo.toml"
+            "${XAAC_ROOT}/decoder/src/lib.rs"
+    )
+    add_custom_target(rust_decoder_build ALL
+        DEPENDS ${RUST_DECODER_LIB}
+    )
+    add_library(librustdec STATIC IMPORTED GLOBAL)
+    add_dependencies(librustdec rust_decoder_build)
+    set_target_properties(librustdec PROPERTIES
+        IMPORTED_LOCATION ${RUST_DECODER_LIB}
+    )
+endif()
