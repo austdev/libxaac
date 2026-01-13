@@ -41,4 +41,3 @@ include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
 include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
 include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
 include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
-
