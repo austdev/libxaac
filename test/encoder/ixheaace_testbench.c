@@ -463,7 +463,7 @@ VOID ia_enhaacplus_enc_display_id_message(WORD8 lib_name[], WORD8 lib_version[])
 }
 
 pVOID malloc_global(UWORD32 size, UWORD32 alignment) {
-#ifdef _WIN32
+#ifdef WIN32
   return _aligned_malloc(size, alignment);
 #else
   pVOID ptr = NULL;
@@ -475,7 +475,7 @@ pVOID malloc_global(UWORD32 size, UWORD32 alignment) {
 }
 
 VOID free_global(pVOID ptr) {
-#ifdef _WIN32
+#ifdef WIN32
   _aligned_free(ptr);
 #else
   free(ptr);
