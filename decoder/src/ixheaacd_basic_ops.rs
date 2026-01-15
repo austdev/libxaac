@@ -1,4 +1,4 @@
-// decoder::ixheaacd_basic_ops
+// decoder::ixheaacd::basic_ops
 
 //! Basic operations for the decoder, DSP primitives
 //!
