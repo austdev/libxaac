@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_TNS_USAC_H
 #define IXHEAACD_TNS_USAC_H
 
+#include "ixheaac_type_def.h"
+
 #define TNS_MAX_BANDS 49
 #define TNS_MAX_ORDER 31
 #define TNS_MAX_WIN 8

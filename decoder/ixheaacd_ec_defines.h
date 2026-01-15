@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_EC_DEFINES_H
 #define IXHEAACD_EC_DEFINES_H
 
+#include "ixheaac_type_def.h"
+
 #define NO_TRANSITION (0)
 #define TRANS_SHORT_LONG (1)
 

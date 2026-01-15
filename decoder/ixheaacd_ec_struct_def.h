@@ -20,6 +20,9 @@
 #ifndef IXHEAACD_EC_STRUCT_DEF_H
 #define IXHEAACD_EC_STRUCT_DEF_H
 
+#include "ixheaacd_ec_defines.h"
+#include "ixheaacd_cnst.h"
+
 typedef struct {
   WORD32 num_sfb_long;
   WORD32 num_sfb_short;

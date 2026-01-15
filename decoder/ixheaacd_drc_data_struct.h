@@ -18,8 +18,10 @@
  * Originally developed and contributed by Ittiam Systems Pvt. Ltd, Bangalore
 */
 #ifndef IXHEAACD_DRC_DATA_STRUCT_H
-
 #define IXHEAACD_DRC_DATA_STRUCT_H
+
+#include "ixheaac_type_def.h"
+#include "ixheaacd_sbr_common.h"
 
 #define MAX_DRC_BANDS 16
 
