@@ -8,5 +8,9 @@ mod rom;
 #[path = "ixheaacd_windowing.rs"]
 mod windowing;
 
+#[path = "ixheaacd_lpc.rs"]
+pub mod lpc;
+
 pub use basic_ops::*;
 pub use windowing::*;
+pub use lpc::*;

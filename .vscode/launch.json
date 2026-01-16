@@ -9,7 +9,7 @@
         "type": "cppvsdbg",
         "request": "launch",
         "program": "${workspaceFolder}/build/xaacdec.exe",
-        "args": ["-ifile:test2_aot42.aac", "-imeta:test2_aot42.txt", "-ofile:output_test2.pcm", "-mp4:1"],
+        "args": ["-ifile:test5_aot42_0.aac", "-imeta:test5_aot42_0.txt", "-ofile:output_test5_02.pcm", "-mp4:1"],
         "stopAtEntry": false,
         "cwd": "${workspaceFolder}/test/data",
         "environment": [],
