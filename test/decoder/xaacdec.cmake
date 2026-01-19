@@ -9,6 +9,7 @@ include_directories(${LIBXAACDEC_INCLUDES})
 
 libxaac_add_executable(xaacdec libxaacdec SOURCES ${XAACDEC_SRCS} INCLUDES
                        ${LIBXAACDEC_INCLUDES})
+set_target_properties(xaacdec PROPERTIES BUILD_RPATH "$ORIGIN")
 
 if(NOT RC_FALLBACK)
     target_link_libraries(xaacdec librustdec)

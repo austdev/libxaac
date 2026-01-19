@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(libxaac C CXX)
 enable_language(ASM)
 
-option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." OFF)
+option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." ON)
 
 option(BUILD64 "Build for 64 bit" OFF)
 set(XAAC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -38,6 +38,7 @@ include("${XAAC_ROOT}/decoder/libxaacdec.cmake")
 include("${XAAC_ROOT}/test/decoder/xaacdec.cmake")
 include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
 
-include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
-include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
-include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
+# Encoder is deferred; four our intents and purposes, it's non-existent
+#include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
+#include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
+#include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
