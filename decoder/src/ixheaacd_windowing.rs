@@ -3,6 +3,7 @@
 //! Window calculation for IMDCT operations
 //!
 
+#[cfg(not(feature = "fallback"))]
 use super::rom;
 
 /// Window type selection
