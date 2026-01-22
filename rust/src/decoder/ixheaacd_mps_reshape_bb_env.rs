@@ -1,0 +1,2332 @@
+extern "C" {
+    pub type ia_mps_dec_ducker_interface;
+}
+pub type WORD8 = core::ffi::c_schar;
+pub type UWORD8 = core::ffi::c_uchar;
+pub type WORD16 = core::ffi::c_short;
+pub type UWORD16 = core::ffi::c_ushort;
+pub type WORD32 = core::ffi::c_int;
+pub type UWORD32 = core::ffi::c_uint;
+pub type WORD64 = core::ffi::c_longlong;
+pub type VOID = ();
+pub type FLAG = core::ffi::c_int;
+pub type LOOPIDX = core::ffi::c_int;
+pub type WORD = core::ffi::c_int;
+pub type LOOPINDEX = LOOPIDX;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_qmf_ana_filter_bank {
+    pub p_filter_ana: *const WORD32,
+    pub ref_co_eff_ptr_l: *const WORD32,
+    pub ref_co_eff_ptr_r: *const WORD32,
+    pub offset_l: WORD32,
+    pub offset_r: WORD32,
+    pub qmf_states_buffer: *mut WORD32,
+    pub flag: WORD16,
+    pub offset: WORD16,
+    pub qmf_states_curr_pos: *mut WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_qmf_syn_filter_bank {
+    pub p_filter_syn: *const WORD32,
+    pub sbr_qmf_states_synthesis: *mut WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_qmf_tables_struct {
+    pub ia_mps_enc_qmf_64_640: [WORD32; 650],
+    pub sbr_alt_sin_twiddle: [WORD16; 33],
+    pub sbr_cos_twiddle: [WORD16; 32],
+    pub sbr_sin_twiddle: [WORD16; 32],
+    pub fft_c: [WORD16; 4],
+    pub ia_qmf_anl_addt_cos: [WORD16; 32],
+    pub ia_qmf_anl_addt_sin: [WORD16; 32],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_common_tables_struct {
+    pub sqrt_tab: [WORD32; 513],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_hybrid_tables_struct {
+    pub p8_13: [WORD16; 19],
+    pub p2_6: [WORD16; 6],
+    pub sine_array: [WORD32; 2048],
+    pub cosine_array: [WORD32; 2048],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_index_tables_struct {
+    pub row_2_channel_stp: [[WORD32; 8]; 7],
+    pub row_2_channel_ges: [[WORD32; 8]; 7],
+    pub row_2_residual: [[WORD32; 8]; 7],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_m1_m2_tables_struct {
+    pub idx_table: ia_mps_dec_index_tables_struct,
+    pub hybrid_2_param_28: [WORD32; 71],
+    pub r1_matrix_l: [WORD32; 31],
+    pub ten_cld_by_10: [WORD32; 31],
+    pub w00_cld2_15: [WORD32; 31],
+    pub table_kappa: [WORD32; 8],
+    pub dec_pow: [WORD32; 31],
+    pub cld_tab_1: [WORD32; 31],
+    pub cld_tab_2: [WORD32; 31],
+    pub cld_tab_3: [WORD32; 31],
+    pub reciprocal: [WORD32; 576],
+    pub c_l_table: [WORD32; 31],
+    pub cos_table: [[WORD32; 31]; 16],
+    pub sin_table: [[WORD32; 31]; 8],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_rev_tables_struct {
+    pub rev_delay: [[WORD32; 10]; 4],
+    pub rev_split_freq_0: [WORD32; 4],
+    pub rev_split_freq_1: [WORD32; 4],
+    pub rev_split_freq_2: [WORD32; 4],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_decorr_tables_struct {
+    pub rev_table: ia_mps_dec_rev_tables_struct,
+    pub lattice_coeff_0: [[WORD32; 20]; 10],
+    pub lattice_coeff_1: [[WORD32; 15]; 10],
+    pub lattice_coeff_2: [[WORD32; 6]; 10],
+    pub lattice_coeff_3: [[WORD32; 3]; 10],
+    pub den_coef_0: [[WORD32; 21]; 10],
+    pub den_coef_1: [[WORD32; 16]; 10],
+    pub den_coef_2: [[WORD32; 7]; 10],
+    pub den_coef_3: [[WORD32; 4]; 10],
+    pub lattice_delta_phi: [[WORD32; 20]; 10],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_tp_process_tables_struct {
+    pub bp: [WORD32; 25],
+    pub bpxgf: [WORD32; 25],
+    pub bp2xgf2: [WORD32; 25],
+    pub ia_mps_dec_qmf_64_640: [WORD32; 325],
+    pub time_out_idx_5xxx: [WORD32; 6],
+    pub time_out_idx_7xxx: [WORD32; 8],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_wf_ptr_table_struct {
+    pub wf: [*const WORD32; 32],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mdct2qmf_table_struct {
+    pub twi_post_cos: [WORD32; 64],
+    pub twi_post_sin: [WORD32; 64],
+    pub hybrid_2_qmf: [WORD32; 71],
+    pub local_sin_4: [WORD32; 4],
+    pub local_sin_15: [WORD32; 16],
+    pub local_sin_16: [WORD32; 16],
+    pub local_sin_18: [WORD32; 18],
+    pub local_sin_24: [WORD32; 24],
+    pub local_sin_30: [WORD32; 30],
+    pub local_sin_32: [WORD32; 32],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_tonality_tables_struct {
+    pub gmax_fix: [WORD16; 72],
+    pub dwin_fix: [WORD32; 72],
+    pub nstart_fix: [[WORD32; 72]; 5],
+    pub dfrac_fix: [[WORD32; 56]; 5],
+    pub part4: [WORD32; 4],
+    pub part5: [WORD32; 5],
+    pub part7: [WORD32; 7],
+    pub part10: [WORD32; 10],
+    pub part14: [WORD32; 14],
+    pub part20: [WORD32; 20],
+    pub part28: [WORD32; 28],
+    pub part40: [WORD32; 40],
+    pub w_real: [WORD32; 16],
+    pub w_imag: [WORD32; 16],
+    pub bitrev: [WORD32; 16],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_kernels_table_struct {
+    pub kernels_4_to_71: [WORD32; 71],
+    pub kernels_5_to_71: [WORD32; 71],
+    pub kernels_7_to_71: [WORD32; 71],
+    pub kernels_10_to_71: [WORD32; 71],
+    pub kernels_14_to_71: [WORD32; 71],
+    pub kernels_20_to_71: [WORD32; 71],
+    pub kernels_28_to_71: [WORD32; 71],
+    pub bb_env_kernels: [WORD32; 71],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mapping_table_struct {
+    pub mapping_4_to_28: [WORD32; 28],
+    pub mapping_5_to_28: [WORD32; 28],
+    pub mapping_7_to_28: [WORD32; 28],
+    pub mapping_10_to_28: [WORD32; 28],
+    pub mapping_14_to_28: [WORD32; 28],
+    pub mapping_20_to_28: [WORD32; 28],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_tree_properties_struct {
+    pub num_input_channels: WORD32,
+    pub num_output_channels: WORD32,
+    pub num_ott_boxes: WORD32,
+    pub num_ttt_boxes: WORD32,
+    pub ott_mode_lfe: [WORD32; 5],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_bitdec_tables_struct {
+    pub kernel_table: ia_mps_dec_kernels_table_struct,
+    pub map_table: ia_mps_dec_mapping_table_struct,
+    pub tree_property_table: [ia_mps_dec_tree_properties_struct; 7],
+    pub sampling_freq_table: [WORD32; 15],
+    pub freq_res_table: [WORD32; 8],
+    pub temp_shape_chan_table: [[WORD32; 7]; 2],
+    pub surround_gain_table: [WORD32; 5],
+    pub lfe_gain_table: [WORD32; 5],
+    pub clip_gain_table: [WORD32; 8],
+    pub pb_stride_table: [WORD32; 4],
+    pub smg_time_table: [WORD32; 4],
+    pub dequant_cld: [WORD32; 31],
+    pub dequant_cld_coarse: [WORD32; 15],
+    pub dequant_cpc: [WORD32; 52],
+    pub dequant_cpc_coarse: [WORD32; 26],
+    pub dequant_icc: [WORD32; 8],
+    pub factor_cld_tab_1: [WORD32; 31],
+    pub hrtf_power: [WORD32; 64],
+    pub envshape_data: [[WORD32; 5]; 2],
+    pub pcm_chnksz_level_3: [WORD32; 5],
+    pub pcm_chnksz_level_4: WORD32,
+    pub pcm_chnksz_level_7: [WORD32; 6],
+    pub pcm_chnksz_level_8: WORD32,
+    pub pcm_chnksz_level_11: [WORD32; 2],
+    pub pcm_chnksz_level_13: [WORD32; 4],
+    pub pcm_chnksz_level_15: WORD32,
+    pub pcm_chnksz_level_19: [WORD32; 4],
+    pub pcm_chnksz_level_25: [WORD32; 3],
+    pub pcm_chnksz_level_26: WORD32,
+    pub pcm_chnksz_level_31: WORD32,
+    pub pcm_chnksz_level_51: [WORD32; 4],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mesh_tables_struct {
+    pub blind_cld_mesh: [[WORD32; 21]; 31],
+    pub blind_icc_mesh: [[WORD32; 21]; 31],
+    pub blind_cpc_1_mesh: [[WORD32; 21]; 31],
+    pub blind_cpc_2_mesh: [[WORD32; 21]; 31],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_blind_tables_struct {
+    pub mesh_table: ia_mps_dec_mesh_tables_struct,
+    pub exp_1: [WORD32; 13],
+    pub exp_2: [WORD32; 13],
+    pub exp_4: [WORD32; 13],
+    pub exp_8: [WORD32; 13],
+    pub exp_16: [WORD32; 13],
+    pub exp_32: [WORD32; 13],
+    pub exp_64: [WORD32; 13],
+    pub exp_128: [WORD32; 13],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mdct2qmf_cos_table_struct {
+    pub cos_table_long: [*mut WORD16; 64],
+    pub cos_table_short: [*mut WORD16; 10],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mdct2qmf_tables_struct {
+    pub cos_table_long_32_00: [WORD16; 32],
+    pub cos_table_long_32_01: [WORD16; 32],
+    pub cos_table_long_32_02: [WORD16; 32],
+    pub cos_table_long_32_03: [WORD16; 32],
+    pub cos_table_long_32_04: [WORD16; 32],
+    pub cos_table_long_32_05: [WORD16; 32],
+    pub cos_table_long_32_06: [WORD16; 32],
+    pub cos_table_long_32_07: [WORD16; 32],
+    pub cos_table_long_32_08: [WORD16; 32],
+    pub cos_table_long_32_09: [WORD16; 32],
+    pub cos_table_long_32_10: [WORD16; 32],
+    pub cos_table_long_32_11: [WORD16; 32],
+    pub cos_table_long_32_12: [WORD16; 32],
+    pub cos_table_long_32_13: [WORD16; 32],
+    pub cos_table_long_32_14: [WORD16; 32],
+    pub cos_table_long_32_15: [WORD16; 32],
+    pub cos_table_long_32_16: [WORD16; 32],
+    pub cos_table_long_32_17: [WORD16; 32],
+    pub cos_table_long_32_18: [WORD16; 32],
+    pub cos_table_long_32_19: [WORD16; 32],
+    pub cos_table_long_32_20: [WORD16; 32],
+    pub cos_table_long_32_21: [WORD16; 32],
+    pub cos_table_long_32_22: [WORD16; 32],
+    pub cos_table_long_32_23: [WORD16; 32],
+    pub cos_table_long_32_24: [WORD16; 32],
+    pub cos_table_long_32_25: [WORD16; 32],
+    pub cos_table_long_32_26: [WORD16; 32],
+    pub cos_table_long_32_27: [WORD16; 32],
+    pub cos_table_long_32_28: [WORD16; 32],
+    pub cos_table_long_32_29: [WORD16; 32],
+    pub cos_table_long_32_30: [WORD16; 32],
+    pub cos_table_long_32_31: [WORD16; 32],
+    pub cos_table_long_30_00: [WORD16; 30],
+    pub cos_table_long_30_01: [WORD16; 30],
+    pub cos_table_long_30_02: [WORD16; 30],
+    pub cos_table_long_30_03: [WORD16; 30],
+    pub cos_table_long_30_04: [WORD16; 30],
+    pub cos_table_long_30_05: [WORD16; 30],
+    pub cos_table_long_30_06: [WORD16; 30],
+    pub cos_table_long_30_07: [WORD16; 30],
+    pub cos_table_long_30_08: [WORD16; 30],
+    pub cos_table_long_30_09: [WORD16; 30],
+    pub cos_table_long_30_10: [WORD16; 30],
+    pub cos_table_long_30_11: [WORD16; 30],
+    pub cos_table_long_30_12: [WORD16; 30],
+    pub cos_table_long_30_13: [WORD16; 30],
+    pub cos_table_long_30_14: [WORD16; 30],
+    pub cos_table_long_30_15: [WORD16; 30],
+    pub cos_table_long_30_16: [WORD16; 30],
+    pub cos_table_long_30_17: [WORD16; 30],
+    pub cos_table_long_30_18: [WORD16; 30],
+    pub cos_table_long_30_19: [WORD16; 30],
+    pub cos_table_long_30_20: [WORD16; 30],
+    pub cos_table_long_30_21: [WORD16; 30],
+    pub cos_table_long_30_22: [WORD16; 30],
+    pub cos_table_long_30_23: [WORD16; 30],
+    pub cos_table_long_30_24: [WORD16; 30],
+    pub cos_table_long_30_25: [WORD16; 30],
+    pub cos_table_long_30_26: [WORD16; 30],
+    pub cos_table_long_30_27: [WORD16; 30],
+    pub cos_table_long_30_28: [WORD16; 30],
+    pub cos_table_long_30_29: [WORD16; 30],
+    pub cos_table_long_24_00: [WORD16; 24],
+    pub cos_table_long_24_01: [WORD16; 24],
+    pub cos_table_long_24_02: [WORD16; 24],
+    pub cos_table_long_24_03: [WORD16; 24],
+    pub cos_table_long_24_04: [WORD16; 24],
+    pub cos_table_long_24_05: [WORD16; 24],
+    pub cos_table_long_24_06: [WORD16; 24],
+    pub cos_table_long_24_07: [WORD16; 24],
+    pub cos_table_long_24_08: [WORD16; 24],
+    pub cos_table_long_24_09: [WORD16; 24],
+    pub cos_table_long_24_10: [WORD16; 24],
+    pub cos_table_long_24_11: [WORD16; 24],
+    pub cos_table_long_24_12: [WORD16; 24],
+    pub cos_table_long_24_13: [WORD16; 24],
+    pub cos_table_long_24_14: [WORD16; 24],
+    pub cos_table_long_24_15: [WORD16; 24],
+    pub cos_table_long_24_16: [WORD16; 24],
+    pub cos_table_long_24_17: [WORD16; 24],
+    pub cos_table_long_24_18: [WORD16; 24],
+    pub cos_table_long_24_19: [WORD16; 24],
+    pub cos_table_long_24_20: [WORD16; 24],
+    pub cos_table_long_24_21: [WORD16; 24],
+    pub cos_table_long_24_22: [WORD16; 24],
+    pub cos_table_long_24_23: [WORD16; 24],
+    pub cos_table_long_18_00: [WORD16; 18],
+    pub cos_table_long_18_01: [WORD16; 18],
+    pub cos_table_long_18_02: [WORD16; 18],
+    pub cos_table_long_18_03: [WORD16; 18],
+    pub cos_table_long_18_04: [WORD16; 18],
+    pub cos_table_long_18_05: [WORD16; 18],
+    pub cos_table_long_18_06: [WORD16; 18],
+    pub cos_table_long_18_07: [WORD16; 18],
+    pub cos_table_long_18_08: [WORD16; 18],
+    pub cos_table_long_18_09: [WORD16; 18],
+    pub cos_table_long_18_10: [WORD16; 18],
+    pub cos_table_long_18_11: [WORD16; 18],
+    pub cos_table_long_18_12: [WORD16; 18],
+    pub cos_table_long_18_13: [WORD16; 18],
+    pub cos_table_long_18_14: [WORD16; 18],
+    pub cos_table_long_18_15: [WORD16; 18],
+    pub cos_table_long_18_16: [WORD16; 18],
+    pub cos_table_long_18_17: [WORD16; 18],
+    pub cos_table_long_16_00: [WORD16; 16],
+    pub cos_table_long_16_01: [WORD16; 16],
+    pub cos_table_long_16_02: [WORD16; 16],
+    pub cos_table_long_16_03: [WORD16; 16],
+    pub cos_table_long_16_04: [WORD16; 16],
+    pub cos_table_long_16_05: [WORD16; 16],
+    pub cos_table_long_16_06: [WORD16; 16],
+    pub cos_table_long_16_07: [WORD16; 16],
+    pub cos_table_long_16_08: [WORD16; 16],
+    pub cos_table_long_16_09: [WORD16; 16],
+    pub cos_table_long_16_10: [WORD16; 16],
+    pub cos_table_long_16_11: [WORD16; 16],
+    pub cos_table_long_16_12: [WORD16; 16],
+    pub cos_table_long_16_13: [WORD16; 16],
+    pub cos_table_long_16_14: [WORD16; 16],
+    pub cos_table_long_16_15: [WORD16; 16],
+    pub cos_table_long_15_00: [WORD16; 15],
+    pub cos_table_long_15_01: [WORD16; 15],
+    pub cos_table_long_15_02: [WORD16; 15],
+    pub cos_table_long_15_03: [WORD16; 15],
+    pub cos_table_long_15_04: [WORD16; 15],
+    pub cos_table_long_15_05: [WORD16; 15],
+    pub cos_table_long_15_06: [WORD16; 15],
+    pub cos_table_long_15_07: [WORD16; 15],
+    pub cos_table_long_15_08: [WORD16; 15],
+    pub cos_table_long_15_09: [WORD16; 15],
+    pub cos_table_long_15_10: [WORD16; 15],
+    pub cos_table_long_15_11: [WORD16; 15],
+    pub cos_table_long_15_12: [WORD16; 15],
+    pub cos_table_long_15_13: [WORD16; 15],
+    pub cos_table_long_15_14: [WORD16; 15],
+    pub cos_table_short_4_00: [WORD16; 4],
+    pub cos_table_short_4_01: [WORD16; 4],
+    pub cos_table_short_4_02: [WORD16; 4],
+    pub cos_table_short_4_03: [WORD16; 4],
+    pub cos_table_short_3_00: [WORD16; 3],
+    pub cos_table_short_3_01: [WORD16; 3],
+    pub cos_table_short_3_02: [WORD16; 3],
+    pub cos_table_short_2_00: [WORD16; 2],
+    pub cos_table_short_2_01: [WORD16; 2],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_res_block_tables_struct {
+    pub pow_table_q17: [WORD32; 129],
+    pub scale_table: [WORD32; 4],
+    pub scale_table_960: [WORD32; 4],
+    pub tns_max_bands_tbl: [[WORD8; 2]; 12],
+    pub tns_coeff3_16: [WORD16; 8],
+    pub tns_coeff4_16: [WORD16; 16],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_res_huffmann_tables_struct {
+    pub sfb_96_1024: [WORD8; 43],
+    pub sfb_96_128: [WORD8; 14],
+    pub sfb_64_1024: [WORD8; 49],
+    pub sfb_48_1024: [WORD8; 51],
+    pub sfb_48_128: [WORD8; 16],
+    pub sfb_32_1024: [WORD8; 53],
+    pub sfb_24_1024: [WORD8; 49],
+    pub sfb_24_128: [WORD8; 17],
+    pub sfb_16_1024: [WORD8; 45],
+    pub sfb_16_128: [WORD8; 17],
+    pub sfb_8_1024: [WORD8; 42],
+    pub sfb_8_128: [WORD8; 17],
+    pub sfb_96_960: [WORD8; 41],
+    pub sfb_96_120: [WORD8; 13],
+    pub sfb_64_960: [WORD8; 47],
+    pub sfb_48_960: [WORD8; 50],
+    pub sfb_48_120: [WORD8; 15],
+    pub sfb_24_960: [WORD8; 47],
+    pub sfb_24_120: [WORD8; 16],
+    pub sfb_16_960: [WORD8; 43],
+    pub sfb_16_120: [WORD8; 16],
+    pub sfb_8_960: [WORD8; 41],
+    pub sfb_8_120: [WORD8; 16],
+    pub huffman_code_book_1: [UWORD16; 108],
+    pub huffman_code_book_2: [UWORD16; 110],
+    pub huffman_code_book_3: [UWORD16; 136],
+    pub huffman_code_book_4: [UWORD16; 116],
+    pub huffman_code_book_5: [UWORD16; 126],
+    pub huffman_code_book_6: [UWORD16; 120],
+    pub huffman_code_book_7: [UWORD16; 112],
+    pub huffman_code_book_8: [UWORD16; 92],
+    pub huffman_code_book_9: [UWORD16; 236],
+    pub huffman_code_book_10: [UWORD16; 218],
+    pub huffman_codebook_11: [UWORD16; 344],
+    pub huffman_code_book_scl: [UWORD16; 273],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_aac_tables_struct {
+    pub res_block_tables_ptr: *mut ia_mps_dec_res_block_tables_struct,
+    pub res_huffmann_tables_ptr: *mut ia_mps_dec_res_huffmann_tables_struct,
+    pub scale_factor_bands_long: [*mut WORD8; 24],
+    pub scale_factor_bands_short: [*mut WORD8; 24],
+    pub sfb_index_long: *mut WORD16,
+    pub sfb_index_short: *mut WORD16,
+    pub sfb_index_long_width: *mut WORD8,
+    pub sfb_index_short_width: *mut WORD8,
+    pub code_book: [*mut UWORD16; 13],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_dynamic_data_struct {
+    pub a_scale_factor: [WORD16; 128],
+    pub a_code_book: [WORD8; 128],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_ics_info_struct {
+    pub window_sequence: WORD16,
+    pub max_sf_bands: WORD16,
+    pub total_sf_bands: WORD16,
+    pub sampling_rate_index: WORD16,
+    pub window_groups: WORD16,
+    pub window_group_length: [WORD8; 8],
+    pub frame_length: WORD16,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_filter_struct {
+    pub start_band: WORD16,
+    pub stop_band: WORD16,
+    pub direction: WORD8,
+    pub resolution: WORD8,
+    pub order: WORD8,
+    pub coeff: [WORD8; 31],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_tns_data {
+    pub tns_data_present: FLAG,
+    pub number_of_filters: [WORD8; 8],
+    pub filter: [[ia_mps_dec_residual_filter_struct; 3]; 8],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_pulse_data_struct {
+    pub pulse_data_present: FLAG,
+    pub number_pulse: WORD16,
+    pub pulse_start_band: WORD16,
+    pub pulse_offset: [WORD8; 4],
+    pub pulse_amp: [WORD8; 4],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_pns_data_struct {
+    pub pns_used: [UWORD8; 128],
+    pub current_energy: WORD16,
+    pub pns_active: UWORD16,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_channel_info_struct {
+    pub p_scale_factor: *mut WORD16,
+    pub p_code_book: *mut WORD8,
+    pub p_spectral_coefficient: *mut WORD32,
+    pub ics_info: ia_mps_dec_residual_ics_info_struct,
+    pub tns_data: ia_mps_dec_residual_tns_data,
+    pub pulse_data: ia_mps_dec_residual_pulse_data_struct,
+    pub pns_data: ia_mps_dec_residual_pns_data_struct,
+    pub common_window: WORD16,
+    pub global_gain: WORD16,
+    pub p_tns_scratch: *mut WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_residual_sfband_info_struct {
+    pub sfb_long_idx: [WORD16; 52],
+    pub sfb_short_idx: [WORD16; 16],
+}
+pub type __jmp_buf = [core::ffi::c_long; 8];
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __sigset_t {
+    pub __val: [core::ffi::c_ulong; 16],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __jmp_buf_tag {
+    pub __jmpbuf: __jmp_buf,
+    pub __mask_was_saved: core::ffi::c_int,
+    pub __saved_mask: __sigset_t,
+}
+pub type jmp_buf = [__jmp_buf_tag; 1];
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_crc_bit_buf_struct {
+    pub ptr_bit_buf_base: *mut UWORD8,
+    pub ptr_bit_buf_end: *mut UWORD8,
+    pub ptr_read_next: *mut UWORD8,
+    pub bit_pos: WORD16,
+    pub cnt_bits: WORD32,
+    pub size: WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_crc_reg_data_struct {
+    pub active: UWORD8,
+    pub buf_size: WORD32,
+    pub max_bits: WORD32,
+    pub bit_cnt: UWORD32,
+    pub bit_buf_cnt: WORD32,
+    pub str_bit_buf: ia_crc_bit_buf_struct,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_adts_crc_info_struct {
+    pub crc_active: UWORD8,
+    pub no_reg: UWORD16,
+    pub file_value: UWORD16,
+    pub crc_lookup: [UWORD16; 256],
+    pub str_crc_reg_data: [ia_crc_reg_data_struct; 7],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_bit_buf_struct {
+    pub ptr_bit_buf_base: *mut UWORD8,
+    pub ptr_bit_buf_end: *mut UWORD8,
+    pub ptr_read_next: *mut UWORD8,
+    pub bit_pos: WORD32,
+    pub cnt_bits: WORD32,
+    pub size: WORD32,
+    pub adts_header_present: WORD32,
+    pub crc_check: WORD32,
+    pub protection_absent: WORD8,
+    pub no_raw_data_blocks: WORD8,
+    pub str_adts_crc_info: ia_adts_crc_info_struct,
+    pub pstr_adts_crc_info: *mut ia_adts_crc_info_struct,
+    pub initial_cnt_bits: WORD32,
+    pub audio_mux_align: WORD32,
+    pub bit_count: WORD32,
+    pub valid_bits: WORD32,
+    pub byte: UWORD8,
+    pub byte_ptr: *mut UWORD8,
+    pub ptr_start: *mut UWORD8,
+    pub write_bit_count: WORD32,
+    pub max_size: WORD32,
+    pub xaac_jmp_buf: *mut jmp_buf,
+}
+pub type size_t = usize;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_decorr_filter_instance_struct {
+    pub state_length: WORD32,
+    pub num_length: WORD32,
+    pub den_length: WORD32,
+    pub complex: WORD32,
+    pub state_real: *mut WORD32,
+    pub state_imag: *mut WORD32,
+    pub numerator_real: *mut WORD32,
+    pub numerator_imag: *mut WORD32,
+    pub denominator_real: *mut WORD32,
+    pub denominator_imag: *mut WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct C2RustUnnamed {
+    pub decorr_seed: WORD32,
+    pub numbins: WORD32,
+    pub filter: [*mut ia_mps_dec_decorr_filter_instance_struct; 71],
+    pub ducker: *mut ia_mps_dec_ducker_interface,
+    pub no_sample_delay: [WORD32; 71],
+    pub delay_buffer_real: *mut *mut WORD32,
+    pub delay_buffer_imag: *mut *mut WORD32,
+}
+pub type ia_mps_dec_decorr_dec_handle = *mut C2RustUnnamed;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_thyb_filter_state_struct {
+    pub buffer_lf_real: [[WORD32; 84]; 3],
+    pub buffer_lf_imag: [[WORD32; 84]; 3],
+    pub qmf_lf_real: [[WORD32; 84]; 3],
+    pub qmf_lf_imag: [[WORD32; 84]; 3],
+    pub buffer_hf_real: [[WORD32; 78]; 64],
+    pub buffer_hf_imag: [[WORD32; 78]; 64],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_spatial_bs_config_struct {
+    pub ui_pcm_wdsz: UWORD32,
+    pub ui_samp_freq: UWORD32,
+    pub ui_in_channels: UWORD32,
+    pub ui_out_channels: UWORD32,
+    pub ui_channel_mask: WORD32,
+    pub frame_ok: WORD32,
+    pub ui_bs_is_buried: UWORD32,
+    pub ui_dec_type: WORD32,
+    pub ui_upmix_type: WORD32,
+    pub ui_binaural_quality: WORD32,
+    pub ui_hrtf_model: WORD32,
+    pub ui_qmf_bands: UWORD32,
+    pub bs_frame_length: WORD32,
+    pub bs_sampling_freq_index: WORD32,
+    pub bs_sampling_frequency: WORD32,
+    pub bs_freq_res: WORD32,
+    pub bs_tree_config: WORD32,
+    pub bs_quant_mode: WORD32,
+    pub bs_one_icc: WORD32,
+    pub bs_arbitrary_downmix: WORD32,
+    pub bs_residual_coding: WORD32,
+    pub bs_smooth_config: WORD32,
+    pub bs_fixed_gain_sur: WORD32,
+    pub bs_fixed_gain_lfe: WORD32,
+    pub bs_fixed_gain_dmx: WORD32,
+    pub bs_matrix_mode: WORD32,
+    pub bs_temp_shape_config: WORD32,
+    pub bs_decorr_config: WORD32,
+    pub bs_3d_audio_mode: WORD32,
+    pub bs_3d_audio_hrtf_set: WORD32,
+    pub bs_hrtf_freq_res: WORD32,
+    pub hrtf_num_band: WORD32,
+    pub bs_hrtf_num_chan: WORD32,
+    pub bs_hrtf_asymmetric: WORD32,
+    pub bs_hrtf_level_left: [[WORD32; 28]; 8],
+    pub bs_hrtf_level_right: [[WORD32; 28]; 8],
+    pub bs_hrtf_phase: [WORD32; 8],
+    pub bs_hrtf_phase_lr: [[WORD32; 28]; 8],
+    pub bs_ott_bands: [WORD32; 5],
+    pub bs_ttt_dual_mode: [WORD32; 1],
+    pub bs_ttt_mode_low: [WORD32; 1],
+    pub bs_ttt_mode_high: [WORD32; 1],
+    pub bs_ttt_bands_low: [WORD32; 1],
+    pub bs_sac_ext_type: [WORD32; 8],
+    pub sac_ext_cnt: WORD32,
+    pub bs_residual_present: [WORD32; 10],
+    pub bs_residual_sampling_freq_index: WORD32,
+    pub bs_residual_frames_per_spatial_frame: WORD32,
+    pub bs_residual_bands: [WORD32; 10],
+    pub bs_arbitrary_downmix_residual_sampling_freq_index: WORD32,
+    pub bs_arbitrary_downmix_residual_frames_per_spatial_frame: WORD32,
+    pub bs_arbitrary_downmix_residual_bands: WORD32,
+    pub bs_env_quant_mode: WORD32,
+    pub arbitrary_tree: WORD32,
+    pub num_out_chan_at: WORD32,
+    pub num_ott_boxes_at: WORD32,
+    pub bs_output_channel_pos_at: [WORD32; 8],
+    pub bs_ott_box_present_at: [[WORD32; 7]; 8],
+    pub bs_ott_default_cld_at: [WORD32; 56],
+    pub bs_ott_mode_lfe_at: [WORD32; 56],
+    pub bs_ott_bands_at: [WORD32; 56],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_lossless_data_struct {
+    pub bs_xxx_data_mode: [[WORD32; 8]; 33],
+    pub bs_quant_coarse_xxx: [[WORD32; 8]; 33],
+    pub bs_freq_res_stride_xxx: [[WORD32; 8]; 33],
+    pub bs_quant_coarse_xxx_prev: [WORD32; 33],
+    pub no_cmp_quant_coarse_xxx: [[WORD32; 8]; 33],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct RESIDUAL_FRAME_DATA {
+    pub bs_icc_diff_present: [[WORD32; 8]; 10],
+    pub bs_icc_diff: [[[WORD32; 28]; 8]; 10],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_spatial_bs_frame_struct {
+    pub bs_independency_flag: WORD32,
+    pub ott_cld_idx: [[[WORD32; 28]; 8]; 33],
+    pub ott_icc_idx: [[[WORD32; 28]; 8]; 5],
+    pub ttt_cpc_1_idx: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cpc_2_idx: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cld_1_idx: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cld_2_idx: [[[WORD32; 28]; 8]; 1],
+    pub ttt_icc_idx: [[[WORD32; 28]; 8]; 1],
+    pub ott_cld_idx_prev: [[WORD32; 28]; 33],
+    pub ott_icc_idx_prev: [[WORD32; 28]; 5],
+    pub ttt_cpc_1_idx_prev: [[WORD32; 28]; 1],
+    pub ttt_cpc_2_idx_prev: [[WORD32; 28]; 1],
+    pub ttt_cld_1_idx_prev: [[WORD32; 28]; 1],
+    pub ttt_cld_2_idx_prev: [[WORD32; 28]; 1],
+    pub ttt_icc_idx_prev: [[WORD32; 28]; 1],
+    pub cmp_ott_cld_idx: [[[WORD32; 28]; 8]; 33],
+    pub cmp_ott_icc_idx: [[[WORD32; 28]; 8]; 5],
+    pub ott_icc_diff_idx: [[[WORD32; 28]; 8]; 5],
+    pub cmp_ttt_cpc_1_idx: [[[WORD32; 28]; 8]; 1],
+    pub cmp_ttt_cpc_2_idx: [[[WORD32; 28]; 8]; 1],
+    pub cmp_ttt_cld_1_idx: [[[WORD32; 28]; 8]; 1],
+    pub cmp_ttt_cld_2_idx: [[[WORD32; 28]; 8]; 1],
+    pub cmp_ttt_icc_idx: [[[WORD32; 28]; 8]; 1],
+    pub cmp_ott_cld_idx_prev: [[WORD32; 28]; 33],
+    pub cmp_ott_icc_idx_prev: [[WORD32; 28]; 5],
+    pub cmp_ttt_cpc_1_idx_prev: [[WORD32; 28]; 1],
+    pub cmp_ttt_cpc_2_idx_prev: [[WORD32; 28]; 1],
+    pub cmp_ttt_cld_1_idx_prev: [[WORD32; 28]; 1],
+    pub cmp_ttt_cld_2_idx_prev: [[WORD32; 28]; 1],
+    pub cmp_ttt_icc_idx_prev: [[WORD32; 28]; 1],
+    pub cld_lossless_data: ia_mps_dec_lossless_data_struct,
+    pub icc_lossless_data: ia_mps_dec_lossless_data_struct,
+    pub cpc_lossless_data: ia_mps_dec_lossless_data_struct,
+    pub bs_smooth_control: WORD32,
+    pub bs_smooth_mode: [WORD32; 8],
+    pub bs_smooth_time: [WORD32; 8],
+    pub bs_freq_res_stride_smg: [WORD32; 8],
+    pub bs_smg_data: [[WORD32; 28]; 8],
+    pub res_data: RESIDUAL_FRAME_DATA,
+    pub arbdmx_gain_idx: [[[WORD32; 28]; 8]; 6],
+    pub arbdmx_gain_idx_prev: [[WORD32; 28]; 6],
+    pub cmp_arbdmx_gain_idx: [[[WORD32; 28]; 8]; 6],
+    pub cmp_arbdmx_gain_idx_prev: [[WORD32; 28]; 6],
+    pub bs_arbitrary_downmix_residual_abs: [WORD32; 6],
+    pub bs_arbitrary_downmix_residual_alpha_update_set: [WORD32; 6],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_tonality_state_struct {
+    pub spec_prev_real: [WORD32; 512],
+    pub spec_prev_imag: [WORD32; 512],
+    pub p_cross_real: [WORD32; 512],
+    pub p_cross_imag: [WORD32; 512],
+    pub p_sum: [WORD32; 512],
+    pub p_sum_prev: [WORD32; 512],
+    pub buf_real: [[WORD32; 6]; 64],
+    pub buf_imag: [[WORD32; 6]; 64],
+    pub win_buf_real: [[WORD32; 16]; 64],
+    pub win_buf_imag: [[WORD32; 16]; 64],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_smoothing_state_struct {
+    pub prev_smg_time: WORD32,
+    pub prev_smg_data: [WORD32; 28],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_reshape_bb_env_state_struct {
+    pub part_nrg_prev: [[WORD32; 28]; 22],
+    pub norm_nrg_prev: [WORD32; 22],
+    pub frame_nrg_prev: [WORD32; 22],
+    pub q_part_nrg_prev: [[WORD16; 28]; 22],
+    pub q_norm_nrg_prev: [WORD16; 22],
+    pub q_frame_nrg_prev: [WORD16; 22],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_ttt_config_struct {
+    pub use_ttt_decorr: WORD32,
+    pub mode: WORD32,
+    pub start_band: WORD32,
+    pub stop_band: WORD32,
+    pub bitstream_start_band: WORD32,
+    pub bitstream_stop_band: WORD32,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_blind_decoder_struct {
+    pub excitation: [[WORD32; 28]; 3],
+    pub filter_coeff: WORD32,
+    pub q_excitation: [[WORD16; 28]; 3],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_subband_tp_params_struct {
+    pub run_dry_ener: [WORD32; 6],
+    pub run_wet_ener: [WORD32; 8],
+    pub old_dry_ener: [WORD32; 6],
+    pub old_wet_ener: [WORD32; 8],
+    pub q_run_dry_ener: [WORD16; 6],
+    pub q_run_wet_ener: [WORD16; 8],
+    pub q_old_dry_ener: [WORD16; 6],
+    pub q_old_wet_ener: [WORD16; 8],
+    pub update_old_ener: WORD32,
+    pub prev_tp_scale: [WORD32; 8],
+    pub q_prev_tp_scale: [WORD16; 8],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_persistent_mem {
+    pub prev_gain_at: *mut WORD32,
+    pub arbdmx_alpha_prev: *mut WORD32,
+    pub m1_param_real_prev: *mut WORD32,
+    pub m1_param_imag_prev: *mut WORD32,
+    pub m2_decor_real_prev: *mut WORD32,
+    pub m2_decor_imag_prev: *mut WORD32,
+    pub m2_resid_real_prev: *mut WORD32,
+    pub m2_resid_imag_prev: *mut WORD32,
+    pub qmf_input_delay_real: *mut WORD32,
+    pub qmf_input_delay_imag: *mut WORD32,
+    pub ana_qmf_states_buffer: *mut WORD32,
+    pub syn_qmf_states_buffer: *mut WORD32,
+    pub decorr_ptr: *mut core::ffi::c_void,
+    pub hyb_filter_state: *mut ia_mps_dec_thyb_filter_state_struct,
+    pub ton_state: *mut ia_mps_dec_tonality_state_struct,
+    pub smooth_state: *mut ia_mps_dec_smoothing_state_struct,
+    pub reshape_bb_env_state: *mut ia_mps_dec_reshape_bb_env_state_struct,
+    pub sub_band_params: *mut ia_mps_dec_subband_tp_params_struct,
+    pub blind_decoder: *mut ia_mps_dec_blind_decoder_struct,
+    pub p_bs_frame: *mut ia_mps_dec_spatial_bs_frame_struct,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_mps_tables_struct {
+    pub qmf_table_ptr: *mut ia_mps_dec_qmf_tables_struct,
+    pub common_table_ptr: *mut ia_mps_dec_common_tables_struct,
+    pub hybrid_table_ptr: *mut ia_mps_dec_hybrid_tables_struct,
+    pub m1_m2_table_ptr: *mut ia_mps_dec_m1_m2_tables_struct,
+    pub decor_table_ptr: *mut ia_mps_dec_decorr_tables_struct,
+    pub tp_process_table_ptr: *mut ia_mps_dec_tp_process_tables_struct,
+    pub mdct2qmf_table_ptr: *mut ia_mps_dec_mdct2qmf_table_struct,
+    pub tonality_table_ptr: *mut ia_mps_dec_tonality_tables_struct,
+    pub bitdec_table_ptr: *mut ia_mps_dec_bitdec_tables_struct,
+    pub blind_table_ptr: *mut ia_mps_dec_blind_tables_struct,
+    pub mdct2qmfcos_table_ptr: *mut ia_mps_dec_mdct2qmf_tables_struct,
+    pub mdct2qmfcos_tab_ptr: *mut ia_mps_dec_mdct2qmf_cos_table_struct,
+    pub aac_tab: *mut core::ffi::c_void,
+    pub wf_tab_ptr: *mut ia_mps_dec_wf_ptr_table_struct,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_synthesis_interface {
+    pub syn_filter_bank: Option<
+        unsafe extern "C" fn(
+            *mut ia_mps_dec_qmf_syn_filter_bank,
+            *mut WORD32,
+            *mut WORD32,
+            *mut WORD32,
+            WORD32,
+            WORD32,
+            WORD32,
+            *mut ia_mps_dec_qmf_tables_struct,
+        ) -> VOID,
+    >,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_m1_param_struct {
+    pub m1_param_real: [[[[WORD32; 28]; 8]; 6]; 8],
+    pub m1_param_imag: [[[[WORD32; 28]; 8]; 6]; 8],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_reuse_array_struct {
+    pub qmf_residual_real: *mut WORD32,
+    pub qmf_residual_imag: *mut WORD32,
+    pub qmf_residual_real_pre: *mut WORD32,
+    pub qmf_residual_real_post: *mut WORD32,
+    pub qmf_residual_imag_pre: *mut WORD32,
+    pub qmf_residual_imag_post: *mut WORD32,
+    pub res_mdct: *mut WORD32,
+    pub time_out: *mut WORD32,
+    pub x_real: *mut WORD32,
+    pub x_imag: *mut WORD32,
+    pub hyb_output_real_dry: *mut WORD32,
+    pub hyb_output_imag_dry: *mut WORD32,
+    pub env_dmx_0: *mut WORD32,
+    pub env_dmx_1: *mut WORD32,
+    pub m_qmf_real: *mut WORD32,
+    pub m_qmf_imag: *mut WORD32,
+    pub w_dry_real: *mut WORD32,
+    pub w_dry_imag: *mut WORD32,
+    pub buf_real: *mut WORD32,
+    pub buf_imag: *mut WORD32,
+    pub buffer_real: *mut WORD32,
+    pub buffer_imag: *mut WORD32,
+    pub m1_param: *mut ia_mps_dec_m1_param_struct,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_m2_param_struct {
+    pub m2_decor_real: [[[WORD32; 28]; 8]; 15],
+    pub m2_decor_imag: [[[WORD32; 28]; 8]; 15],
+    pub m2_resid_real: [[[WORD32; 28]; 8]; 19],
+    pub m2_resid_imag: [[[WORD32; 28]; 8]; 19],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_mps_dec_auxilary_struct {
+    pub m2_param: *mut ia_mps_dec_m2_param_struct,
+    pub temp_shape_enable_channel_stp: [WORD32; 8],
+    pub temp_shape_enable_channel_ges: [WORD32; 8],
+    pub env_shape_data: [[WORD32; 72]; 8],
+    pub num_ott_bands: [WORD32; 5],
+    pub ttt_config: [[ia_mps_dec_ttt_config_struct; 1]; 2],
+    pub param_slot: [WORD32; 8],
+    pub smg_time: [WORD32; 8],
+    pub smg_data: [[WORD32; 28]; 8],
+    pub ott_cld: [[[WORD32; 28]; 8]; 33],
+    pub ott_icc: [[[WORD32; 28]; 8]; 5],
+    pub ttt_cpc_1: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cpc_2: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cld_1: [[[WORD32; 28]; 8]; 1],
+    pub ttt_cld_2: [[[WORD32; 28]; 8]; 1],
+    pub ttt_icc: [[[WORD32; 28]; 8]; 1],
+    pub arbdmx_gain: [[[WORD32; 28]; 8]; 6],
+    pub arbdmx_residual_abs: [WORD32; 6],
+    pub arbdmx_alpha_upd_set: [WORD32; 6],
+    pub arbdmx_alpha: [WORD32; 6],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ia_heaac_mps_state_struct {
+    pub sac_time_align_flag: WORD32,
+    pub sac_time_align: WORD32,
+    pub sampling_freq: WORD32,
+    pub tree_config: WORD32,
+    pub num_input_channels: WORD32,
+    pub num_output_channels: WORD32,
+    pub num_ott_boxes: WORD32,
+    pub num_ttt_boxes: WORD32,
+    pub num_output_channels_at: WORD32,
+    pub quant_mode: WORD32,
+    pub one_icc: WORD32,
+    pub arbitrary_downmix: WORD32,
+    pub residual_coding: WORD32,
+    pub smooth_config: WORD32,
+    pub temp_shape_config: WORD32,
+    pub decorr_config: WORD32,
+    pub mtx_inversion: WORD32,
+    pub _3d_stereo_inversion: WORD32,
+    pub env_quant_mode: WORD32,
+    pub clip_protect_gain: WORD32,
+    pub surround_gain: WORD32,
+    pub lfe_gain: WORD32,
+    pub cpc_default: WORD32,
+    pub icc_default: WORD32,
+    pub arbdmx_gain_default: WORD32,
+    pub num_direct_signals: WORD32,
+    pub num_residual_signals: WORD32,
+    pub num_decor_signals: WORD32,
+    pub num_v_channels: WORD32,
+    pub num_w_channels: WORD32,
+    pub w_start_residual_idx: WORD32,
+    pub num_x_channels: WORD32,
+    pub time_slots: WORD32,
+    pub cur_time_slot: WORD32,
+    pub frame_length: WORD32,
+    pub dec_type: WORD32,
+    pub up_mix_type: WORD32,
+    pub binaural_quality: WORD32,
+    pub hrtf_model: WORD32,
+    pub tp_hyb_band_border: WORD32,
+    pub parse_next_bitstream_frame: WORD32,
+    pub qmf_bands: WORD32,
+    pub hybrid_bands: WORD32,
+    pub residual_frames_per_spatial_frame: WORD32,
+    pub upd_qmf: WORD32,
+    pub arbdmx_residual_bands: WORD32,
+    pub arbdmx_frames_per_spatial_frame: WORD32,
+    pub arbdmx_upd_qmf: WORD32,
+    pub bitstream_parameter_bands: WORD32,
+    pub num_parameter_bands: WORD32,
+    pub extend_frame: WORD32,
+    pub num_parameter_sets: WORD32,
+    pub num_parameter_sets_prev: WORD32,
+    pub smooth_control: WORD32,
+    pub i_bytes_consumed_mps: WORD32,
+    pub bytes_remaining: WORD32,
+    pub ui_mps_in_bytes: WORD32,
+    pub is_sbr_present: WORD32,
+    pub bits_per_sample: WORD32,
+    pub qmf_input_delay_index: WORD32,
+    pub m1_param_imag_present: WORD32,
+    pub m2_param_imag_present: WORD32,
+    pub m1_param_present: [[WORD32; 6]; 8],
+    pub m2_param_present: [[WORD32; 8]; 8],
+    pub index: [WORD32; 10],
+    pub ott_cld_default: [WORD32; 5],
+    pub ttt_cld_1_default: [WORD32; 1],
+    pub ttt_cld_2_default: [WORD32; 1],
+    pub kernels: [size_t; 71],
+    pub res_bands: [WORD32; 10],
+    pub ott_mode_lfe: [WORD32; 5],
+    pub bitstream_ott_bands: [WORD32; 5],
+    pub scaling_enable: WORD32,
+    pub is_buried_flag: WORD32,
+    pub sfband_info_tab: ia_mps_dec_residual_sfband_info_struct,
+    pub pcm_out_buf: *mut WORD16,
+    pub res_block_type: [[WORD32; 4]; 10],
+    pub bs_config: ia_mps_spatial_bs_config_struct,
+    pub ap_decor: [ia_mps_dec_decorr_dec_handle; 5],
+    pub qmf_bank: [ia_mps_dec_qmf_ana_filter_bank; 6],
+    pub syn_qmf_bank: ia_mps_dec_qmf_syn_filter_bank,
+    pub mps_bit_buf: ia_bit_buf_struct,
+    pub ptr_mps_bit_buff: *mut ia_bit_buf_struct,
+    pub bs_frame: *mut ia_mps_dec_spatial_bs_frame_struct,
+    pub array_struct: *mut ia_mps_dec_reuse_array_struct,
+    pub aux_struct: *mut ia_mps_dec_auxilary_struct,
+    pub mps_scratch_mem_v: *mut core::ffi::c_void,
+    pub mps_persistent_mem: ia_mps_persistent_mem,
+    pub mps_persistent_mem_v: *mut core::ffi::c_void,
+    pub syn: *mut ia_mps_dec_synthesis_interface,
+    pub p_aac_decoder_channel_info: [*mut ia_mps_dec_residual_channel_info_struct; 2],
+    pub p_aac_decoder_dynamic_data_init: [*mut ia_mps_dec_residual_dynamic_data_struct; 2],
+    pub tot_sf_bands_ls: [WORD8; 2],
+    pub ia_mps_dec_mps_table: ia_mps_dec_mps_tables_struct,
+    pub aac_table: ia_mps_dec_residual_aac_tables_struct,
+    pub ia_mps_dec_mdct2qmfcos_table: ia_mps_dec_mdct2qmf_cos_table_struct,
+    pub wf_tab: ia_mps_dec_wf_ptr_table_struct,
+    pub is_first: WORD32,
+    pub mps_decode: WORD32,
+    pub temp_buf: [UWORD8; 1024],
+    pub heaac_mps_present: WORD32,
+    pub mps_with_sbr: WORD32,
+    pub mps_init_done: WORD32,
+    pub ec_flag: WORD32,
+    pub frame_ok: WORD32,
+    pub first_frame: WORD32,
+}
+pub type C2RustUnnamed_0 = core::ffi::c_uint;
+pub const TREE_7572: C2RustUnnamed_0 = 6;
+pub const TREE_7571: C2RustUnnamed_0 = 5;
+pub const TREE_7272: C2RustUnnamed_0 = 4;
+pub const TREE_7271: C2RustUnnamed_0 = 3;
+pub const TREE_525: C2RustUnnamed_0 = 2;
+pub const TREE_5152: C2RustUnnamed_0 = 1;
+pub const TREE_5151: C2RustUnnamed_0 = 0;
+pub const MAX_64: WORD64 = 0x7fffffffffffffff as core::ffi::c_long as WORD64;
+pub const MIN_64: WORD64 = 0x8000000000000000 as core::ffi::c_ulong as WORD64;
+pub const MAX_32: WORD32 = 0x7fffffff as core::ffi::c_long as WORD32;
+pub const MIN_32: WORD32 = 0x80000000 as core::ffi::c_long as WORD32;
+#[inline]
+unsafe extern "C" fn ixheaac_shl32(mut a: WORD32, mut b: WORD) -> WORD32 {
+    let mut out_val: WORD32 = 0;
+    b = ((b << 24 as core::ffi::c_int) as UWORD32 >> 24 as core::ffi::c_int) as WORD;
+    if b > 31 as core::ffi::c_int {
+        out_val = 0 as core::ffi::c_int as WORD32;
+    } else {
+        out_val = a << b;
+    }
+    return out_val;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_shr32(mut a: WORD32, mut b: WORD) -> WORD32 {
+    let mut out_val: WORD32 = 0;
+    b = ((b << 24 as core::ffi::c_int) as UWORD32 >> 24 as core::ffi::c_int) as WORD;
+    if b >= 31 as core::ffi::c_int {
+        if a < 0 as core::ffi::c_int {
+            out_val = -(1 as core::ffi::c_int) as WORD32;
+        } else {
+            out_val = 0 as core::ffi::c_int as WORD32;
+        }
+    } else {
+        out_val = a >> b;
+    }
+    return out_val;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_add32_sat(mut a: WORD32, mut b: WORD32) -> WORD32 {
+    let mut sum: WORD64 = 0;
+    sum = a as WORD64 + b as WORD64;
+    if sum >= MAX_32 as WORD64 {
+        return MAX_32;
+    }
+    if sum <= MIN_32 as WORD64 {
+        return MIN_32;
+    }
+    return sum as WORD32;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_norm32(mut a: WORD32) -> WORD {
+    let mut norm_val: WORD = 0;
+    if a == 0 as core::ffi::c_int {
+        norm_val = 31 as core::ffi::c_int as WORD;
+    } else if a == 0xffffffff as core::ffi::c_long as WORD32 {
+        norm_val = 31 as core::ffi::c_int as WORD;
+    } else {
+        if a < 0 as core::ffi::c_int {
+            a = !a;
+        }
+        norm_val = 0 as core::ffi::c_int as WORD;
+        while a < 0x40000000 as core::ffi::c_long as WORD32 {
+            a <<= 1 as core::ffi::c_int;
+            norm_val += 1;
+        }
+    }
+    return norm_val;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_mult32x16in32(mut a: WORD32, mut b: WORD16) -> WORD32 {
+    let mut result: WORD32 = 0;
+    let mut temp_result: WORD64 = 0;
+    temp_result = a as WORD64 * b as WORD64;
+    result = (temp_result >> 16 as core::ffi::c_int) as WORD32;
+    return result;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_mult32_shl(mut a: WORD32, mut b: WORD32) -> WORD32 {
+    let mut result: WORD32 = 0;
+    let mut temp_result: WORD64 = 0;
+    temp_result = a as WORD64 * b as WORD64;
+    result = (temp_result >> 32 as core::ffi::c_int) as WORD32;
+    return result << 1 as core::ffi::c_int;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_mult32x32in64(mut a: WORD32, mut b: WORD32) -> WORD64 {
+    let mut result: WORD64 = 0;
+    result = a as WORD64 * b as WORD64;
+    return result;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_add64_sat(mut a: WORD64, mut b: WORD64) -> WORD64 {
+    let mut result: WORD64 = 0;
+    let mut comp: WORD64 = 0;
+    result = if a < 0 as WORD64 { MIN_64 } else { MAX_64 };
+    comp = result - a;
+    if (a < 0 as WORD64) as core::ffi::c_int == (b > comp) as core::ffi::c_int {
+        result = a + b;
+    }
+    return result;
+}
+#[inline]
+unsafe extern "C" fn ixheaac_sat64_32(mut a: WORD64) -> WORD32 {
+    let mut result: WORD32 = 0;
+    if a >= MAX_32 as WORD64 {
+        result = MAX_32;
+    } else if a <= MIN_32 as WORD64 {
+        result = MIN_32;
+    } else {
+        result = a as WORD32;
+    }
+    return result;
+}
+pub const MAX_PARAMETER_BANDS: core::ffi::c_int = 28 as core::ffi::c_int;
+pub const ABS_THR_FIX: core::ffi::c_int = 35184 as core::ffi::c_int;
+pub const MAX_NUM_QMF_BANDS: core::ffi::c_int = 64 as core::ffi::c_int;
+pub const MAX_HYBRID_BANDS: core::ffi::c_int = MAX_NUM_QMF_BANDS - 3 as core::ffi::c_int
+    + 10 as core::ffi::c_int;
+pub const MAX_INPUT_CHANNELS_MPS: core::ffi::c_int = 6 as core::ffi::c_int;
+pub const MAX_OUTPUT_CHANNELS_MPS: core::ffi::c_int = 8 as core::ffi::c_int;
+pub const ONE_IN_Q15: core::ffi::c_int = 32768 as core::ffi::c_int;
+pub const ONE_IN_Q30: core::ffi::c_int = 1073741824 as core::ffi::c_int;
+pub const ONE_BY_NINE_Q16: core::ffi::c_int = 7282 as core::ffi::c_int;
+pub const TSXHB: core::ffi::c_int = 5112 as core::ffi::c_int;
+pub const PB_OFFSET: core::ffi::c_int = 9 as core::ffi::c_int;
+pub const INV_SQRT_2_Q31: core::ffi::c_int = 1518500250 as core::ffi::c_int;
+pub const Q_SQRT_TAB: core::ffi::c_int = 15 as core::ffi::c_int;
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_get_rshift_bits(mut a: WORD64) -> WORD32 {
+    let mut temp_1: WORD32 = 0;
+    let mut temp_2: WORD32 = 0;
+    temp_1 = (a >> 32 as core::ffi::c_int) as WORD32;
+    temp_2 = ixheaac_norm32(temp_1) as WORD32;
+    if temp_2 < 31 as core::ffi::c_int {
+        return 32 as WORD32 - temp_2
+    } else {
+        temp_2 = a as WORD32;
+        if temp_1 ^ temp_2 < 0 as core::ffi::c_int {
+            return 1 as WORD32
+        } else {
+            return 0 as WORD32
+        }
+    };
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_narrow(
+    mut a: WORD64,
+    mut qfac: *mut WORD16,
+) -> WORD32 {
+    let mut x: WORD32 = 0;
+    x = ixheaacd_mps_get_rshift_bits(a);
+    *qfac = (20 as WORD32 - x) as WORD16;
+    return (a >> x) as WORD32;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_sqrt(
+    mut num: WORD32,
+    mut q: *mut WORD16,
+    mut sqrt_tab: *const WORD32,
+) -> WORD32 {
+    let mut index: WORD32 = 0;
+    let mut answer: WORD32 = 0;
+    let mut temp: WORD32 = 0;
+    let mut k: WORD = 0;
+    if num == 0 as core::ffi::c_int {
+        return 0 as WORD32;
+    }
+    k = ixheaac_norm32(num);
+    temp = ixheaac_shr32(ixheaac_shl32(num, k), 21 as WORD);
+    *q = (*q as core::ffi::c_int + k as core::ffi::c_int) as WORD16;
+    index = (temp as core::ffi::c_int & 0x1ff as core::ffi::c_int) as WORD32;
+    answer = *sqrt_tab.offset(index as isize);
+    if *q as core::ffi::c_int & 1 as core::ffi::c_int != 0 {
+        *q = (*q as core::ffi::c_int - 1 as core::ffi::c_int) as WORD16;
+        answer = ixheaac_mult32_shl(answer, INV_SQRT_2_Q31);
+    }
+    *q = (*q as core::ffi::c_int >> 1 as core::ffi::c_int) as WORD16;
+    *q = (*q as core::ffi::c_int + Q_SQRT_TAB) as WORD16;
+    return answer;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_reshape_add32(
+    mut op1: WORD32,
+    mut op2: WORD32,
+    mut qop1: *mut WORD16,
+    mut qop2: WORD16,
+) -> WORD32 {
+    let mut tempresult: WORD64 = 0;
+    if 0 as core::ffi::c_int == op2 {
+        return op1;
+    }
+    if 0 as core::ffi::c_int == op1 {
+        *qop1 = qop2;
+        return op2;
+    }
+    if (*qop1 as core::ffi::c_int) < qop2 as core::ffi::c_int {
+        if qop2 as core::ffi::c_int - *qop1 as core::ffi::c_int > 31 as core::ffi::c_int
+        {
+            op2 = 0 as core::ffi::c_int as WORD32;
+        } else {
+            op2 = op2 >> qop2 as core::ffi::c_int - *qop1 as core::ffi::c_int;
+        }
+        tempresult = op1 as WORD64 + op2 as WORD64;
+    } else {
+        if *qop1 as core::ffi::c_int - qop2 as core::ffi::c_int > 31 as core::ffi::c_int
+        {
+            op1 = 0 as core::ffi::c_int as WORD32;
+        } else {
+            op1 = op1 >> *qop1 as core::ffi::c_int - qop2 as core::ffi::c_int;
+        }
+        *qop1 = qop2;
+        tempresult = op1 as WORD64 + op2 as WORD64;
+    }
+    if tempresult > 0x7fffffff as core::ffi::c_int as WORD64
+        || tempresult < 0x80000000 as core::ffi::c_uint as WORD32 as WORD64
+    {
+        tempresult = tempresult >> 1 as core::ffi::c_int;
+        *qop1 = (*qop1 as core::ffi::c_int - 1 as core::ffi::c_int) as WORD16;
+    }
+    return tempresult as WORD32;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_add32(
+    mut a: WORD32,
+    mut b: WORD32,
+    mut q_a: *mut WORD16,
+    mut q_b: WORD16,
+) -> WORD32 {
+    let mut temp_result: WORD64 = 0;
+    if a == 0 as core::ffi::c_int || b == 0 as core::ffi::c_int {
+        if b == 0 as core::ffi::c_int {
+            return a
+        } else {
+            *q_a = q_b;
+            return b;
+        }
+    }
+    if *q_a as core::ffi::c_int > q_b as core::ffi::c_int {
+        if *q_a as core::ffi::c_int - q_b as core::ffi::c_int > 31 as core::ffi::c_int {
+            a = 0 as core::ffi::c_int as WORD32;
+            *q_a = q_b;
+        } else {
+            a = a >> *q_a as core::ffi::c_int - q_b as core::ffi::c_int;
+            *q_a = q_b;
+        }
+    } else if q_b as core::ffi::c_int - *q_a as core::ffi::c_int > 31 as core::ffi::c_int
+    {
+        b = 0 as core::ffi::c_int as WORD32;
+    } else {
+        b = b >> q_b as core::ffi::c_int - *q_a as core::ffi::c_int;
+        q_b = *q_a;
+    }
+    temp_result = a as WORD64 + b as WORD64;
+    if temp_result > 0x7fffffff as core::ffi::c_int as WORD64
+        || temp_result < 0x80000000 as core::ffi::c_uint as WORD32 as WORD64
+    {
+        temp_result = temp_result >> 1 as core::ffi::c_int;
+        *q_a = (*q_a as core::ffi::c_int - 1 as core::ffi::c_int) as WORD16;
+    }
+    return temp_result as WORD32;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_mult32x32(
+    mut a: WORD32,
+    mut b: WORD32,
+    mut q_a: *mut WORD16,
+    mut q_b: WORD16,
+) -> WORD32 {
+    let mut temp_result: WORD64 = 0;
+    if a == 0 as core::ffi::c_int || b == 0 as core::ffi::c_int {
+        temp_result = 0 as WORD64;
+        *q_a = 15 as WORD16;
+        return temp_result as WORD32;
+    }
+    *q_a = (*q_a as core::ffi::c_int + q_b as core::ffi::c_int) as WORD16;
+    temp_result = a as WORD64 * b as WORD64;
+    while temp_result > 0x7fffffff as core::ffi::c_int as WORD64
+        || temp_result < 0x80000000 as core::ffi::c_uint as WORD32 as WORD64
+    {
+        temp_result = temp_result >> 1 as core::ffi::c_int;
+        *q_a = (*q_a as core::ffi::c_int - 1 as core::ffi::c_int) as WORD16;
+    }
+    return temp_result as WORD32;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_mult32_shr_16(mut a: WORD32, mut b: WORD32) -> WORD32 {
+    let mut result: WORD32 = 0;
+    let mut temp_result: WORD64 = 0;
+    temp_result = a as WORD64 * b as WORD64;
+    result = (temp_result >> 16 as core::ffi::c_int) as WORD32;
+    return result;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_mult32_shr_15(mut a: WORD32, mut b: WORD32) -> WORD32 {
+    let mut result: WORD32 = 0;
+    let mut temp_result: WORD64 = 0;
+    temp_result = a as WORD64 * b as WORD64;
+    result = ixheaac_sat64_32(temp_result >> 15 as core::ffi::c_int);
+    return result;
+}
+#[inline]
+unsafe extern "C" fn ixheaacd_mps_div_32(
+    mut a: WORD32,
+    mut b: WORD32,
+    mut q_format: *mut WORD16,
+) -> WORD32 {
+    let mut quotient: WORD32 = 0;
+    let mut mantissa_nr: UWORD32 = 0;
+    let mut mantissa_dr: UWORD32 = 0;
+    let mut i: LOOPINDEX = 0;
+    let mut q_nr: WORD = 0;
+    let mut q_dr: WORD = 0;
+    quotient = 0 as core::ffi::c_int as WORD32;
+    if 0 as core::ffi::c_int == b {
+        *q_format = 0 as WORD16;
+        return a;
+    }
+    quotient = 0 as core::ffi::c_int as WORD32;
+    q_nr = ixheaac_norm32(a);
+    mantissa_nr = (a as UWORD32) << q_nr;
+    q_dr = ixheaac_norm32(b);
+    mantissa_dr = (b as UWORD32) << q_dr;
+    *q_format = (30 as WORD + q_nr - q_dr) as WORD16;
+    i = 0 as core::ffi::c_int as LOOPINDEX;
+    while i < 31 as core::ffi::c_int {
+        quotient <<= 1 as core::ffi::c_int;
+        if mantissa_nr >= mantissa_dr {
+            mantissa_nr = mantissa_nr.wrapping_sub(mantissa_dr);
+            quotient += 1 as core::ffi::c_int;
+        }
+        mantissa_nr <<= 1 as core::ffi::c_int;
+        i += 1;
+    }
+    if a ^ b < 0 as core::ffi::c_int {
+        return -quotient;
+    }
+    return quotient;
+}
+unsafe extern "C" fn ixheaacd_mps_convert_to_qn(
+    mut temp: WORD32,
+    mut qtemp: WORD16,
+    mut n: WORD16,
+) -> WORD32 {
+    let mut result: WORD64 = 0;
+    if qtemp as core::ffi::c_int == n as core::ffi::c_int {
+        return temp
+    } else if qtemp as core::ffi::c_int > n as core::ffi::c_int {
+        temp = (temp as WORD64 >> qtemp as core::ffi::c_int - n as core::ffi::c_int)
+            as WORD32;
+    } else {
+        result = ((temp as WORD64) << n as core::ffi::c_int - qtemp as core::ffi::c_int)
+            as WORD32 as WORD64;
+        if result > 0x7fffffff as core::ffi::c_int as WORD64
+            || result < 0x80000000 as core::ffi::c_uint as WORD32 as WORD64
+        {
+            return 0 as WORD32
+        } else {
+            temp = result as WORD32;
+        }
+    }
+    return temp;
+}
+pub const INP_DRY_WET: core::ffi::c_int = 0 as core::ffi::c_int;
+pub const INP_DMX: core::ffi::c_int = 1;
+pub const ALPHA_Q15: core::ffi::c_int = 32649 as core::ffi::c_int;
+pub const BETA_Q15: core::ffi::c_int = 31600 as core::ffi::c_int;
+pub const ONE_MINUS_ALPHA_Q16: core::ffi::c_int = 238 as core::ffi::c_int;
+pub const ONE_MINUS_BETA_Q16: core::ffi::c_int = 2336 as core::ffi::c_int;
+#[no_mangle]
+pub unsafe extern "C" fn ixheaacd_init_bb_env(
+    mut pstr_mps_state: *mut ia_heaac_mps_state_struct,
+) -> VOID {
+    let mut k: WORD32 = 0;
+    let mut j: WORD32 = 0;
+    let mut reshape_bb_env_state: *mut ia_mps_dec_reshape_bb_env_state_struct = (*pstr_mps_state)
+        .mps_persistent_mem
+        .reshape_bb_env_state;
+    k = 0 as core::ffi::c_int as WORD32;
+    while k < 2 as core::ffi::c_int * MAX_OUTPUT_CHANNELS_MPS + MAX_INPUT_CHANNELS_MPS {
+        (*reshape_bb_env_state).norm_nrg_prev[k as usize] = ONE_IN_Q30 as WORD32;
+        (*reshape_bb_env_state).frame_nrg_prev[k as usize] = 0 as core::ffi::c_int
+            as WORD32;
+        (*reshape_bb_env_state).q_frame_nrg_prev[k as usize] = 30 as WORD16;
+        (*reshape_bb_env_state).q_norm_nrg_prev[k as usize] = 30 as WORD16;
+        j = 0 as core::ffi::c_int as WORD32;
+        while j < MAX_PARAMETER_BANDS {
+            (*reshape_bb_env_state).part_nrg_prev[k as usize][j as usize] = 0
+                as core::ffi::c_int as WORD32;
+            (*reshape_bb_env_state).q_part_nrg_prev[k as usize][j as usize] = 30
+                as WORD16;
+            j += 1;
+        }
+        k += 1;
+    }
+}
+unsafe extern "C" fn ixheaacd_extract_bb_env(
+    mut pstr_mps_state: *mut ia_heaac_mps_state_struct,
+    mut inp: WORD32,
+    mut ch: WORD32,
+    mut env: *mut WORD32,
+    mut scratch: *mut core::ffi::c_void,
+    mut flag: WORD32,
+) -> VOID {
+    let mut reshape_bb_env_state: *mut ia_mps_dec_reshape_bb_env_state_struct = (*pstr_mps_state)
+        .mps_persistent_mem
+        .reshape_bb_env_state;
+    let mut slot_nrg_fix: *mut WORD64 = 0 as *mut WORD64;
+    let mut slot_nrg: *mut WORD64 = 0 as *mut WORD64;
+    let mut q_slot_nrg_fix: *mut WORD16 = 0 as *mut WORD16;
+    let mut q_slot_nrg: *mut WORD16 = 0 as *mut WORD16;
+    let mut part_nrg_fix: *mut WORD32 = 0 as *mut WORD32;
+    let mut q_part_nrg_fix: *mut WORD16 = 0 as *mut WORD16;
+    let mut p_buffer_real: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_imag: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_re: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_im: *mut WORD32 = 0 as *mut WORD32;
+    let mut ts: WORD32 = 0;
+    let mut qs: WORD32 = 0;
+    let mut pb: WORD32 = 0;
+    let mut start_p: WORD32 = 10 as WORD32;
+    let mut end_p: WORD32 = 18 as WORD32;
+    let mut env_fix_l: WORD32 = 0;
+    let mut q_env_fix_l: WORD16 = 0;
+    let mut alpha_fix: WORD16 = ALPHA_Q15 as WORD16;
+    let mut beta_fix: WORD16 = BETA_Q15 as WORD16;
+    let mut one_min_alpha_fix: WORD16 = ONE_MINUS_ALPHA_Q16 as WORD16;
+    let mut one_min_beta_fix: WORD16 = ONE_MINUS_BETA_Q16 as WORD16;
+    let mut one_by_nine: WORD16 = ONE_BY_NINE_Q16 as WORD16;
+    let mut frame_nrg_fix: WORD32 = 0 as WORD32;
+    let mut norm_nrg_fix: *mut WORD32 = 0 as *mut WORD32;
+    let mut q_frame_nrg_fix: WORD16 = 0 as WORD16;
+    let mut q_norm_nrg_fix: *mut WORD16 = 0 as *mut WORD16;
+    let mut temp_1: WORD32 = 0;
+    let mut temp4: WORD32 = 0;
+    let mut qtemp1: WORD16 = 0;
+    let mut q_env: WORD16 = 0;
+    let mut prev_ch_offs: WORD32 = 0;
+    let mut cnt: WORD32 = if (42 as core::ffi::c_int) < (*pstr_mps_state).hybrid_bands {
+        42 as WORD32
+    } else {
+        (*pstr_mps_state).hybrid_bands
+    };
+    let mut time_slots: WORD32 = (*pstr_mps_state).time_slots;
+    let mut sqrt_tab: *const WORD32 = ((*(*pstr_mps_state)
+        .ia_mps_dec_mps_table
+        .common_table_ptr)
+        .sqrt_tab)
+        .as_mut_ptr();
+    let mut hyb_output_real_dry: *mut WORD32 = 0 as *mut WORD32;
+    let mut n_slot_nrg: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_output_imag_dry: *mut WORD32 = 0 as *mut WORD32;
+    let mut bb_env_kernels: *const WORD32 = ((*(*pstr_mps_state)
+        .ia_mps_dec_mps_table
+        .bitdec_table_ptr)
+        .kernel_table
+        .bb_env_kernels)
+        .as_mut_ptr();
+    q_slot_nrg_fix = scratch as *mut WORD16;
+    n_slot_nrg = (scratch as *mut WORD8)
+        .offset(
+            (18 as core::ffi::c_int + (8 as core::ffi::c_int - 1 as core::ffi::c_int)
+                & !(8 as core::ffi::c_int - 1 as core::ffi::c_int)) as isize,
+        ) as *mut WORD32;
+    slot_nrg_fix = (scratch as *mut WORD8)
+        .offset(
+            (54 as core::ffi::c_int + (8 as core::ffi::c_int - 1 as core::ffi::c_int)
+                & !(8 as core::ffi::c_int - 1 as core::ffi::c_int)) as isize,
+        ) as *mut WORD64;
+    let mut frame_nrg_prev: WORD32 = 0;
+    let mut q_frame_nrg_prev: WORD16 = 0;
+    let mut p_hyb_out_dry_real: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_hyb_out_dry_imag: *mut WORD32 = 0 as *mut WORD32;
+    match inp {
+        INP_DRY_WET => {
+            frame_nrg_prev = (*reshape_bb_env_state).frame_nrg_prev[ch as usize];
+            q_frame_nrg_prev = (*reshape_bb_env_state).q_frame_nrg_prev[ch as usize];
+            part_nrg_fix = &mut *(*((*reshape_bb_env_state).part_nrg_prev)
+                .as_mut_ptr()
+                .offset(ch as isize))
+                .as_mut_ptr()
+                .offset(0 as core::ffi::c_int as isize) as *mut WORD32;
+            q_part_nrg_fix = &mut *(*((*reshape_bb_env_state).q_part_nrg_prev)
+                .as_mut_ptr()
+                .offset(ch as isize))
+                .as_mut_ptr()
+                .offset(0 as core::ffi::c_int as isize) as *mut WORD16;
+            norm_nrg_fix = &mut *((*reshape_bb_env_state).norm_nrg_prev)
+                .as_mut_ptr()
+                .offset(ch as isize) as *mut WORD32;
+            q_norm_nrg_fix = &mut *((*reshape_bb_env_state).q_norm_nrg_prev)
+                .as_mut_ptr()
+                .offset(ch as isize) as *mut WORD16;
+            p_buffer_real = ((*(*pstr_mps_state).array_struct).buf_real)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            p_buffer_imag = ((*(*pstr_mps_state).array_struct).buf_imag)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            p_hyb_out_dry_real = ((*(*pstr_mps_state).array_struct).hyb_output_real_dry)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            p_hyb_out_dry_imag = ((*(*pstr_mps_state).array_struct).hyb_output_imag_dry)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            ts = 0 as core::ffi::c_int as WORD32;
+            while ts < time_slots {
+                let mut prev_idx: WORD32 = 10 as WORD32;
+                slot_nrg = slot_nrg_fix.offset(4 as core::ffi::c_int as isize);
+                pb = 14 as core::ffi::c_int as WORD32;
+                while pb <= end_p {
+                    let fresh6 = slot_nrg;
+                    slot_nrg = slot_nrg.offset(1);
+                    *fresh6 = 0 as WORD64;
+                    pb += 1;
+                }
+                slot_nrg = slot_nrg_fix;
+                p_buffer_re = p_buffer_real;
+                p_buffer_im = p_buffer_imag;
+                hyb_output_real_dry = p_hyb_out_dry_real;
+                hyb_output_imag_dry = p_hyb_out_dry_imag;
+                qs = 12 as core::ffi::c_int as WORD32;
+                while qs < 16 as core::ffi::c_int {
+                    temp_1 = ixheaac_add32_sat(*hyb_output_real_dry, *p_buffer_re);
+                    temp4 = ixheaac_add32_sat(*hyb_output_imag_dry, *p_buffer_im);
+                    let fresh7 = slot_nrg;
+                    slot_nrg = slot_nrg.offset(1);
+                    *fresh7 = ixheaac_add64_sat(
+                        ixheaac_mult32x32in64(temp_1, temp_1),
+                        ixheaac_mult32x32in64(temp4, temp4),
+                    );
+                    p_buffer_re = p_buffer_re.offset(1);
+                    p_buffer_im = p_buffer_im.offset(1);
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                prev_idx = 14 as core::ffi::c_int as WORD32;
+                while qs < 30 as core::ffi::c_int {
+                    let mut idx: WORD32 = *bb_env_kernels.offset(qs as isize);
+                    if prev_idx != idx {
+                        slot_nrg = slot_nrg.offset(1);
+                        prev_idx = idx;
+                    }
+                    temp_1 = ixheaac_add32_sat(*hyb_output_real_dry, *p_buffer_re);
+                    temp4 = ixheaac_add32_sat(*hyb_output_imag_dry, *p_buffer_im);
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(temp_1, temp_1),
+                    );
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(temp4, temp4),
+                    );
+                    p_buffer_re = p_buffer_re.offset(1);
+                    p_buffer_im = p_buffer_im.offset(1);
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                slot_nrg = slot_nrg.offset(1);
+                while qs < cnt {
+                    temp_1 = ixheaac_add32_sat(*hyb_output_real_dry, *p_buffer_re);
+                    temp4 = ixheaac_add32_sat(*hyb_output_imag_dry, *p_buffer_im);
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(temp_1, temp_1),
+                    );
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(temp4, temp4),
+                    );
+                    p_buffer_re = p_buffer_re.offset(1);
+                    p_buffer_im = p_buffer_im.offset(1);
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                slot_nrg = slot_nrg_fix;
+                q_slot_nrg = q_slot_nrg_fix;
+                frame_nrg_fix = 0 as core::ffi::c_int as WORD32;
+                q_frame_nrg_fix = 30 as WORD16;
+                pb = start_p;
+                while pb <= end_p {
+                    *n_slot_nrg = ixheaacd_mps_narrow(*slot_nrg, q_slot_nrg);
+                    slot_nrg = slot_nrg.offset(1);
+                    temp_1 = ixheaac_mult32x16in32(*n_slot_nrg, one_min_alpha_fix);
+                    temp4 = ixheaac_mult32x16in32(
+                        *part_nrg_fix.offset(pb as isize) << 1 as core::ffi::c_int,
+                        alpha_fix,
+                    );
+                    *part_nrg_fix.offset(pb as isize) = ixheaacd_mps_reshape_add32(
+                        temp4,
+                        temp_1,
+                        &mut *q_part_nrg_fix.offset(pb as isize),
+                        *q_slot_nrg,
+                    );
+                    let fresh8 = n_slot_nrg;
+                    n_slot_nrg = n_slot_nrg.offset(1);
+                    let fresh9 = q_slot_nrg;
+                    q_slot_nrg = q_slot_nrg.offset(1);
+                    frame_nrg_fix = ixheaacd_mps_reshape_add32(
+                        frame_nrg_fix,
+                        *fresh8,
+                        &mut q_frame_nrg_fix,
+                        *fresh9,
+                    );
+                    pb += 1;
+                }
+                frame_nrg_fix = ixheaac_mult32x16in32(frame_nrg_fix, one_by_nine);
+                temp_1 = ixheaac_mult32x16in32(frame_nrg_fix, one_min_alpha_fix);
+                temp4 = ixheaac_mult32x16in32(
+                    frame_nrg_prev << 1 as core::ffi::c_int,
+                    alpha_fix,
+                );
+                frame_nrg_fix = ixheaacd_mps_reshape_add32(
+                    temp_1,
+                    temp4,
+                    &mut q_frame_nrg_fix,
+                    q_frame_nrg_prev,
+                );
+                frame_nrg_prev = frame_nrg_fix;
+                q_frame_nrg_prev = q_frame_nrg_fix;
+                env_fix_l = 0 as core::ffi::c_int as WORD32;
+                q_env_fix_l = 30 as WORD16;
+                q_slot_nrg = q_slot_nrg_fix;
+                n_slot_nrg = n_slot_nrg.offset(-(PB_OFFSET as isize));
+                pb = start_p;
+                while pb <= end_p {
+                    let fresh10 = n_slot_nrg;
+                    n_slot_nrg = n_slot_nrg.offset(1);
+                    temp_1 = ixheaacd_mps_div_32(
+                        *fresh10,
+                        *part_nrg_fix.offset(pb as isize),
+                        &mut qtemp1,
+                    );
+                    let fresh11 = q_slot_nrg;
+                    q_slot_nrg = q_slot_nrg.offset(1);
+                    qtemp1 = (*fresh11 as core::ffi::c_int + qtemp1 as core::ffi::c_int
+                        - *q_part_nrg_fix.offset(pb as isize) as core::ffi::c_int)
+                        as WORD16;
+                    env_fix_l = ixheaacd_mps_reshape_add32(
+                        env_fix_l,
+                        temp_1,
+                        &mut q_env_fix_l,
+                        qtemp1,
+                    );
+                    pb += 1;
+                }
+                n_slot_nrg = n_slot_nrg.offset(-(PB_OFFSET as isize));
+                env_fix_l = ixheaacd_mps_mult32x32(
+                    env_fix_l,
+                    frame_nrg_fix,
+                    &mut q_env_fix_l,
+                    q_frame_nrg_fix,
+                );
+                temp_1 = ixheaac_mult32x16in32(env_fix_l, one_min_beta_fix);
+                temp4 = ixheaac_mult32x16in32(
+                    *norm_nrg_fix << 1 as core::ffi::c_int,
+                    beta_fix,
+                );
+                *norm_nrg_fix = ixheaacd_mps_reshape_add32(
+                    temp4,
+                    temp_1,
+                    q_norm_nrg_fix,
+                    q_env_fix_l,
+                );
+                if flag != 0 {
+                    temp_1 = ixheaacd_mps_div_32(env_fix_l, *norm_nrg_fix, &mut qtemp1);
+                    q_env = (q_env_fix_l as core::ffi::c_int + qtemp1 as core::ffi::c_int
+                        - *q_norm_nrg_fix as core::ffi::c_int) as WORD16;
+                    *env.offset(ts as isize) = ixheaacd_mps_sqrt(
+                        temp_1,
+                        &mut q_env,
+                        sqrt_tab,
+                    );
+                    *env.offset(ts as isize) = ixheaacd_mps_convert_to_qn(
+                        *env.offset(ts as isize),
+                        q_env,
+                        15 as WORD16,
+                    );
+                }
+                p_buffer_real = p_buffer_real.offset(MAX_HYBRID_BANDS as isize);
+                p_buffer_imag = p_buffer_imag.offset(MAX_HYBRID_BANDS as isize);
+                p_hyb_out_dry_real = p_hyb_out_dry_real
+                    .offset(MAX_HYBRID_BANDS as isize);
+                p_hyb_out_dry_imag = p_hyb_out_dry_imag
+                    .offset(MAX_HYBRID_BANDS as isize);
+                ts += 1;
+            }
+            (*reshape_bb_env_state).frame_nrg_prev[ch as usize] = frame_nrg_prev;
+            (*reshape_bb_env_state).q_frame_nrg_prev[ch as usize] = q_frame_nrg_prev;
+        }
+        INP_DMX => {
+            prev_ch_offs = ch + (*pstr_mps_state).num_output_channels;
+            frame_nrg_prev = (*reshape_bb_env_state)
+                .frame_nrg_prev[prev_ch_offs as usize];
+            q_frame_nrg_prev = (*reshape_bb_env_state)
+                .q_frame_nrg_prev[prev_ch_offs as usize];
+            part_nrg_fix = &mut *(*((*reshape_bb_env_state).part_nrg_prev)
+                .as_mut_ptr()
+                .offset(prev_ch_offs as isize))
+                .as_mut_ptr()
+                .offset(0 as core::ffi::c_int as isize) as *mut WORD32;
+            q_part_nrg_fix = &mut *(*((*reshape_bb_env_state).q_part_nrg_prev)
+                .as_mut_ptr()
+                .offset(prev_ch_offs as isize))
+                .as_mut_ptr()
+                .offset(0 as core::ffi::c_int as isize) as *mut WORD16;
+            norm_nrg_fix = &mut *((*reshape_bb_env_state).norm_nrg_prev)
+                .as_mut_ptr()
+                .offset(prev_ch_offs as isize) as *mut WORD32;
+            q_norm_nrg_fix = &mut *((*reshape_bb_env_state).q_norm_nrg_prev)
+                .as_mut_ptr()
+                .offset(prev_ch_offs as isize) as *mut WORD16;
+            p_buffer_real = ((*(*pstr_mps_state).array_struct).x_real)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            p_buffer_imag = ((*(*pstr_mps_state).array_struct).x_imag)
+                .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                .offset(12 as core::ffi::c_int as isize);
+            ts = 0 as core::ffi::c_int as WORD32;
+            while ts < time_slots {
+                let mut prev_idx_0: WORD32 = 0;
+                slot_nrg = slot_nrg_fix.offset(4 as core::ffi::c_int as isize);
+                pb = 14 as core::ffi::c_int as WORD32;
+                while pb <= end_p {
+                    let fresh12 = slot_nrg;
+                    slot_nrg = slot_nrg.offset(1);
+                    *fresh12 = 0 as WORD64;
+                    pb += 1;
+                }
+                slot_nrg = slot_nrg_fix;
+                hyb_output_real_dry = p_buffer_real;
+                hyb_output_imag_dry = p_buffer_imag;
+                qs = 12 as core::ffi::c_int as WORD32;
+                while qs < 16 as core::ffi::c_int {
+                    let fresh13 = slot_nrg;
+                    slot_nrg = slot_nrg.offset(1);
+                    *fresh13 = ixheaac_add64_sat(
+                        ixheaac_mult32x32in64(
+                            *hyb_output_real_dry,
+                            *hyb_output_real_dry,
+                        ),
+                        ixheaac_mult32x32in64(*hyb_output_imag_dry, *hyb_output_imag_dry),
+                    );
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                prev_idx_0 = 14 as core::ffi::c_int as WORD32;
+                while qs < 30 as core::ffi::c_int {
+                    let mut idx_0: WORD32 = *bb_env_kernels.offset(qs as isize);
+                    if prev_idx_0 != idx_0 {
+                        slot_nrg = slot_nrg.offset(1);
+                        prev_idx_0 = idx_0;
+                    }
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(*hyb_output_real_dry, *hyb_output_real_dry),
+                    );
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(*hyb_output_imag_dry, *hyb_output_imag_dry),
+                    );
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                slot_nrg = slot_nrg.offset(1);
+                while qs < cnt {
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(*hyb_output_real_dry, *hyb_output_real_dry),
+                    );
+                    *slot_nrg = ixheaac_add64_sat(
+                        *slot_nrg,
+                        ixheaac_mult32x32in64(*hyb_output_imag_dry, *hyb_output_imag_dry),
+                    );
+                    hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                    hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                    qs += 1;
+                }
+                slot_nrg = slot_nrg_fix;
+                q_slot_nrg = q_slot_nrg_fix;
+                frame_nrg_fix = 0 as core::ffi::c_int as WORD32;
+                q_frame_nrg_fix = 30 as WORD16;
+                pb = start_p;
+                while pb <= end_p {
+                    *n_slot_nrg = ixheaacd_mps_narrow(*slot_nrg, q_slot_nrg);
+                    slot_nrg = slot_nrg.offset(1);
+                    temp_1 = ixheaac_mult32x16in32(*n_slot_nrg, one_min_alpha_fix);
+                    temp4 = ixheaac_mult32x16in32(
+                        *part_nrg_fix.offset(pb as isize) << 1 as core::ffi::c_int,
+                        alpha_fix,
+                    );
+                    *part_nrg_fix.offset(pb as isize) = ixheaacd_mps_reshape_add32(
+                        temp4,
+                        temp_1,
+                        &mut *q_part_nrg_fix.offset(pb as isize),
+                        *q_slot_nrg,
+                    );
+                    let fresh14 = n_slot_nrg;
+                    n_slot_nrg = n_slot_nrg.offset(1);
+                    let fresh15 = q_slot_nrg;
+                    q_slot_nrg = q_slot_nrg.offset(1);
+                    frame_nrg_fix = ixheaacd_mps_reshape_add32(
+                        frame_nrg_fix,
+                        *fresh14,
+                        &mut q_frame_nrg_fix,
+                        *fresh15,
+                    );
+                    pb += 1;
+                }
+                frame_nrg_fix = ixheaac_mult32x16in32(frame_nrg_fix, one_by_nine);
+                temp_1 = ixheaac_mult32x16in32(frame_nrg_fix, one_min_alpha_fix);
+                temp4 = ixheaac_mult32x16in32(
+                    frame_nrg_prev << 1 as core::ffi::c_int,
+                    alpha_fix,
+                );
+                frame_nrg_fix = ixheaacd_mps_reshape_add32(
+                    temp_1,
+                    temp4,
+                    &mut q_frame_nrg_fix,
+                    q_frame_nrg_prev,
+                );
+                frame_nrg_prev = frame_nrg_fix;
+                q_frame_nrg_prev = q_frame_nrg_fix;
+                env_fix_l = 0 as core::ffi::c_int as WORD32;
+                q_env_fix_l = 30 as WORD16;
+                q_slot_nrg = q_slot_nrg_fix;
+                n_slot_nrg = n_slot_nrg.offset(-(PB_OFFSET as isize));
+                pb = start_p;
+                while pb <= end_p {
+                    let fresh16 = n_slot_nrg;
+                    n_slot_nrg = n_slot_nrg.offset(1);
+                    temp_1 = ixheaacd_mps_div_32(
+                        *fresh16,
+                        *part_nrg_fix.offset(pb as isize),
+                        &mut qtemp1,
+                    );
+                    let fresh17 = q_slot_nrg;
+                    q_slot_nrg = q_slot_nrg.offset(1);
+                    qtemp1 = (*fresh17 as core::ffi::c_int + qtemp1 as core::ffi::c_int
+                        - *q_part_nrg_fix.offset(pb as isize) as core::ffi::c_int)
+                        as WORD16;
+                    env_fix_l = ixheaacd_mps_reshape_add32(
+                        env_fix_l,
+                        temp_1,
+                        &mut q_env_fix_l,
+                        qtemp1,
+                    );
+                    pb += 1;
+                }
+                n_slot_nrg = n_slot_nrg.offset(-(PB_OFFSET as isize));
+                env_fix_l = ixheaacd_mps_mult32x32(
+                    env_fix_l,
+                    frame_nrg_fix,
+                    &mut q_env_fix_l,
+                    q_frame_nrg_fix,
+                );
+                temp_1 = ixheaac_mult32x16in32(env_fix_l, one_min_beta_fix);
+                temp4 = ixheaac_mult32x16in32(
+                    *norm_nrg_fix << 1 as core::ffi::c_int,
+                    beta_fix,
+                );
+                *norm_nrg_fix = ixheaacd_mps_reshape_add32(
+                    temp4,
+                    temp_1,
+                    q_norm_nrg_fix,
+                    q_env_fix_l,
+                );
+                temp_1 = ixheaacd_mps_div_32(env_fix_l, *norm_nrg_fix, &mut qtemp1);
+                q_env = (q_env_fix_l as core::ffi::c_int + qtemp1 as core::ffi::c_int
+                    - *q_norm_nrg_fix as core::ffi::c_int) as WORD16;
+                *env.offset(ts as isize) = ixheaacd_mps_sqrt(
+                    temp_1,
+                    &mut q_env,
+                    sqrt_tab,
+                );
+                *env.offset(ts as isize) = ixheaacd_mps_convert_to_qn(
+                    *env.offset(ts as isize),
+                    q_env,
+                    15 as WORD16,
+                );
+                p_buffer_real = p_buffer_real.offset(MAX_HYBRID_BANDS as isize);
+                p_buffer_imag = p_buffer_imag.offset(MAX_HYBRID_BANDS as isize);
+                ts += 1;
+            }
+            (*reshape_bb_env_state).frame_nrg_prev[prev_ch_offs as usize] = frame_nrg_prev;
+            (*reshape_bb_env_state).q_frame_nrg_prev[prev_ch_offs as usize] = q_frame_nrg_prev;
+        }
+        _ => {}
+    };
+}
+#[no_mangle]
+pub unsafe extern "C" fn ixheaacd_reshape_bb_env(
+    mut pstr_mps_state: *mut ia_heaac_mps_state_struct,
+) -> VOID {
+    let mut env_dry: *mut WORD32 = 0 as *mut WORD32;
+    let mut env_dmx_0: *mut WORD32 = 0 as *mut WORD32;
+    let mut env_dmx_1: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_real: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_imag: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_re: *mut WORD32 = 0 as *mut WORD32;
+    let mut p_buffer_im: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_output_real_wet: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_output_imag_wet: *mut WORD32 = 0 as *mut WORD32;
+    let mut temp_1: WORD32 = 0;
+    let mut temp_2: WORD32 = 0;
+    let mut qtemp1: WORD16 = 0;
+    let mut qtemp2: WORD16 = 0;
+    let mut tmp: WORD32 = 0;
+    let mut dry_fac: WORD32 = 0;
+    let mut slot_amp_dry: WORD32 = 0;
+    let mut slot_amp_wet: WORD32 = 0;
+    let mut q_dry_fac: WORD16 = 0;
+    let mut q_slot_amp_dry: WORD16 = 0;
+    let mut q_slot_amp_wet: WORD16 = 0;
+    let mut slot_amp_ratio: WORD32 = 0;
+    let mut q_slot_amp_ratio: WORD16 = 0;
+    let mut ch: WORD32 = 0;
+    let mut ch2: WORD32 = 0;
+    let mut ts: WORD32 = 0;
+    let mut qs: WORD32 = 0;
+    let mut hyb_output_real_dry: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_out_dry_real: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_output_imag_dry: *mut WORD32 = 0 as *mut WORD32;
+    let mut hyb_out_dry_imag: *mut WORD32 = 0 as *mut WORD32;
+    let mut inter: *mut WORD64 = 0 as *mut WORD64;
+    let mut free_scratch: *mut core::ffi::c_void = 0 as *mut core::ffi::c_void;
+    let mut sqrt_tab: *const WORD32 = ((*(*pstr_mps_state)
+        .ia_mps_dec_mps_table
+        .common_table_ptr)
+        .sqrt_tab)
+        .as_mut_ptr();
+    let mut p_aux_struct: *mut ia_mps_dec_auxilary_struct = (*pstr_mps_state).aux_struct;
+    let mut temp_shape_enable_channel_ges: *mut WORD32 = ((*p_aux_struct)
+        .temp_shape_enable_channel_ges)
+        .as_mut_ptr();
+    let mut start_hsb: WORD32 = 0;
+    let mut time_slots: WORD32 = (*pstr_mps_state).time_slots;
+    let mut num_output_channels: WORD32 = (*pstr_mps_state).num_output_channels;
+    let mut tree_config: WORD32 = (*pstr_mps_state).tree_config;
+    let mut hybrid_bands: WORD32 = (*pstr_mps_state).hybrid_bands;
+    let mut ch_idx: *const WORD32 = &mut *(*((*(*pstr_mps_state)
+        .ia_mps_dec_mps_table
+        .m1_m2_table_ptr)
+        .idx_table
+        .row_2_channel_ges)
+        .as_mut_ptr()
+        .offset(tree_config as isize))
+        .as_mut_ptr()
+        .offset(0 as core::ffi::c_int as isize) as *mut WORD32;
+    let mut acc: WORD64 = 0;
+    let mut acc2: WORD64 = 0;
+    start_hsb = 6 as core::ffi::c_int as WORD32;
+    free_scratch = (*pstr_mps_state).mps_scratch_mem_v;
+    env_dry = free_scratch as *mut WORD32;
+    env_dmx_0 = (*(*pstr_mps_state).array_struct).env_dmx_0;
+    env_dmx_1 = (*(*pstr_mps_state).array_struct).env_dmx_1;
+    inter = (free_scratch as *mut WORD8)
+        .offset(
+            (864 as core::ffi::c_int + (8 as core::ffi::c_int - 1 as core::ffi::c_int)
+                & !(8 as core::ffi::c_int - 1 as core::ffi::c_int)) as isize,
+        ) as *mut WORD64;
+    free_scratch = inter
+        .offset(
+            ((72 as usize)
+                .wrapping_mul(::core::mem::size_of::<WORD64>() as usize)
+                .wrapping_add((8 as core::ffi::c_int - 1 as core::ffi::c_int) as usize)
+                & !(8 as core::ffi::c_int - 1 as core::ffi::c_int) as usize)
+                .wrapping_div(::core::mem::size_of::<WORD64>() as usize) as isize,
+        ) as *mut core::ffi::c_void;
+    p_buffer_real = ((*(*pstr_mps_state).array_struct).buf_real)
+        .offset(start_hsb as isize);
+    p_buffer_imag = ((*(*pstr_mps_state).array_struct).buf_imag)
+        .offset(start_hsb as isize);
+    ch = 0 as core::ffi::c_int as WORD32;
+    while ch < num_output_channels {
+        ch2 = *ch_idx.offset(ch as isize);
+        if !(ch2 == -(1 as core::ffi::c_int)) {
+            p_buffer_re = p_buffer_real;
+            p_buffer_im = p_buffer_imag;
+            ixheaacd_extract_bb_env(
+                pstr_mps_state,
+                INP_DRY_WET,
+                ch,
+                env_dry,
+                free_scratch,
+                *temp_shape_enable_channel_ges.offset(ch2 as isize),
+            );
+            if *temp_shape_enable_channel_ges.offset(ch2 as isize) != 0 {
+                let mut env: *mut WORD32 = &mut *(*((*p_aux_struct).env_shape_data)
+                    .as_mut_ptr()
+                    .offset(ch2 as isize))
+                    .as_mut_ptr()
+                    .offset(0 as core::ffi::c_int as isize) as *mut WORD32;
+                match tree_config {
+                    0 | 1 => {
+                        ts = 0 as core::ffi::c_int as WORD32;
+                        while ts < time_slots {
+                            let fresh0 = env;
+                            env = env.offset(1);
+                            *inter.offset(ts as isize) = *fresh0 as WORD64
+                                * *env_dmx_0.offset(ts as isize) as WORD64;
+                            ts += 1;
+                        }
+                    }
+                    2 | 3 | 4 => {
+                        match ch2 {
+                            0 | 3 | 5 => {
+                                ts = 0 as core::ffi::c_int as WORD32;
+                                while ts < time_slots {
+                                    let fresh1 = env;
+                                    env = env.offset(1);
+                                    *inter.offset(ts as isize) = *fresh1 as WORD64
+                                        * *env_dmx_0.offset(ts as isize) as WORD64;
+                                    ts += 1;
+                                }
+                            }
+                            1 | 4 | 6 => {
+                                ts = 0 as core::ffi::c_int as WORD32;
+                                while ts < time_slots {
+                                    let fresh2 = env;
+                                    env = env.offset(1);
+                                    *inter.offset(ts as isize) = *fresh2 as WORD64
+                                        * *env_dmx_1.offset(ts as isize) as WORD64;
+                                    ts += 1;
+                                }
+                            }
+                            2 => {
+                                ts = 0 as core::ffi::c_int as WORD32;
+                                while ts < time_slots {
+                                    temp_2 = (*env_dmx_0.offset(ts as isize) as WORD64
+                                        + *env_dmx_1.offset(ts as isize) as WORD64
+                                        >> 1 as core::ffi::c_int) as WORD32;
+                                    let fresh3 = env;
+                                    env = env.offset(1);
+                                    *inter.offset(ts as isize) = *fresh3 as WORD64
+                                        * temp_2 as WORD64;
+                                    ts += 1;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    5 | 6 => {
+                        match ch2 {
+                            0 | 2 => {
+                                ts = 0 as core::ffi::c_int as WORD32;
+                                while ts < time_slots {
+                                    let fresh4 = env;
+                                    env = env.offset(1);
+                                    *inter.offset(ts as isize) = *fresh4 as WORD64
+                                        * *env_dmx_0.offset(ts as isize) as WORD64;
+                                    ts += 1;
+                                }
+                            }
+                            1 | 3 => {
+                                ts = 0 as core::ffi::c_int as WORD32;
+                                while ts < time_slots {
+                                    let fresh5 = env;
+                                    env = env.offset(1);
+                                    *inter.offset(ts as isize) = *fresh5 as WORD64
+                                        * *env_dmx_1.offset(ts as isize) as WORD64;
+                                    ts += 1;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+                hyb_out_dry_real = ((*(*pstr_mps_state).array_struct)
+                    .hyb_output_real_dry)
+                    .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                    .offset(start_hsb as isize);
+                hyb_out_dry_imag = ((*(*pstr_mps_state).array_struct)
+                    .hyb_output_imag_dry)
+                    .offset((ch as core::ffi::c_int * TSXHB) as isize)
+                    .offset(start_hsb as isize);
+                ts = 0 as core::ffi::c_int as WORD32;
+                while ts < time_slots {
+                    tmp = ixheaacd_mps_narrow(*inter.offset(ts as isize), &mut qtemp1);
+                    if *env_dry.offset(ts as isize) == 0 as core::ffi::c_int {
+                        q_dry_fac = 0 as WORD16;
+                        dry_fac = MAX_32;
+                    } else {
+                        dry_fac = ixheaacd_mps_div_32(
+                            tmp,
+                            *env_dry.offset(ts as isize),
+                            &mut q_dry_fac,
+                        );
+                        q_dry_fac = (q_dry_fac as core::ffi::c_int
+                            + (qtemp1 as core::ffi::c_int - 5 as core::ffi::c_int))
+                            as WORD16;
+                    }
+                    hyb_output_real_wet = p_buffer_re;
+                    hyb_output_imag_wet = p_buffer_im;
+                    hyb_output_real_dry = hyb_out_dry_real;
+                    hyb_output_imag_dry = hyb_out_dry_imag;
+                    acc = 0 as WORD64;
+                    acc2 = 0 as WORD64;
+                    qs = start_hsb;
+                    while qs < hybrid_bands {
+                        acc = ixheaac_add64_sat(
+                            acc,
+                            ixheaac_mult32x32in64(
+                                *hyb_output_real_dry,
+                                *hyb_output_real_dry,
+                            ),
+                        );
+                        hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                        acc = ixheaac_add64_sat(
+                            acc,
+                            ixheaac_mult32x32in64(
+                                *hyb_output_imag_dry,
+                                *hyb_output_imag_dry,
+                            ),
+                        );
+                        hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                        acc2 = ixheaac_add64_sat(
+                            acc2,
+                            ixheaac_mult32x32in64(
+                                *hyb_output_real_wet,
+                                *hyb_output_real_wet,
+                            ),
+                        );
+                        hyb_output_real_wet = hyb_output_real_wet.offset(1);
+                        acc2 = ixheaac_add64_sat(
+                            acc2,
+                            ixheaac_mult32x32in64(
+                                *hyb_output_imag_wet,
+                                *hyb_output_imag_wet,
+                            ),
+                        );
+                        hyb_output_imag_wet = hyb_output_imag_wet.offset(1);
+                        qs += 1;
+                    }
+                    slot_amp_dry = ixheaacd_mps_narrow(acc, &mut q_slot_amp_dry);
+                    slot_amp_wet = ixheaacd_mps_narrow(acc2, &mut q_slot_amp_wet);
+                    qtemp1 = q_slot_amp_dry;
+                    temp_1 = ixheaacd_mps_add32(
+                        slot_amp_dry,
+                        ABS_THR_FIX,
+                        &mut qtemp1,
+                        15 as WORD16,
+                    );
+                    temp_2 = ixheaacd_mps_div_32(slot_amp_wet, temp_1, &mut qtemp2);
+                    q_slot_amp_ratio = (qtemp2 as core::ffi::c_int
+                        + q_slot_amp_wet as core::ffi::c_int
+                        - qtemp1 as core::ffi::c_int) as WORD16;
+                    slot_amp_ratio = ixheaacd_mps_sqrt(
+                        temp_2,
+                        &mut q_slot_amp_ratio,
+                        sqrt_tab,
+                    );
+                    temp_1 = ixheaacd_mps_convert_to_qn(
+                        dry_fac,
+                        q_dry_fac,
+                        15 as WORD16,
+                    );
+                    temp_1 -= ONE_IN_Q15;
+                    temp_1 = ixheaacd_mps_mult32_shr_16(temp_1, slot_amp_ratio);
+                    q_slot_amp_ratio = (q_slot_amp_ratio as core::ffi::c_int
+                        - 1 as core::ffi::c_int) as WORD16;
+                    temp_1 = ixheaacd_mps_add32(
+                        temp_1,
+                        dry_fac,
+                        &mut q_slot_amp_ratio,
+                        q_dry_fac,
+                    );
+                    temp_1 = ixheaacd_mps_convert_to_qn(
+                        temp_1,
+                        q_slot_amp_ratio,
+                        15 as WORD16,
+                    );
+                    temp_1 = (if 8192 as core::ffi::c_int > temp_1 {
+                        8192 as core::ffi::c_int
+                    } else {
+                        temp_1 as core::ffi::c_int
+                    }) as WORD32;
+                    dry_fac = (if (131072 as core::ffi::c_int) < temp_1 {
+                        131072 as core::ffi::c_int
+                    } else {
+                        temp_1 as core::ffi::c_int
+                    }) as WORD32;
+                    hyb_output_real_dry = hyb_out_dry_real;
+                    hyb_output_imag_dry = hyb_out_dry_imag;
+                    qs = start_hsb;
+                    while qs < hybrid_bands {
+                        *hyb_output_real_dry = ixheaacd_mps_mult32_shr_15(
+                            *hyb_output_real_dry,
+                            dry_fac,
+                        );
+                        hyb_output_real_dry = hyb_output_real_dry.offset(1);
+                        *hyb_output_imag_dry = ixheaacd_mps_mult32_shr_15(
+                            *hyb_output_imag_dry,
+                            dry_fac,
+                        );
+                        hyb_output_imag_dry = hyb_output_imag_dry.offset(1);
+                        qs += 1;
+                    }
+                    p_buffer_re = p_buffer_re.offset(MAX_HYBRID_BANDS as isize);
+                    p_buffer_im = p_buffer_im.offset(MAX_HYBRID_BANDS as isize);
+                    hyb_out_dry_real = hyb_out_dry_real
+                        .offset(MAX_HYBRID_BANDS as isize);
+                    hyb_out_dry_imag = hyb_out_dry_imag
+                        .offset(MAX_HYBRID_BANDS as isize);
+                    ts += 1;
+                }
+            }
+            p_buffer_real = p_buffer_real.offset(TSXHB as isize);
+            p_buffer_imag = p_buffer_imag.offset(TSXHB as isize);
+        }
+        ch += 1;
+    }
+}
+#[no_mangle]
+pub unsafe extern "C" fn ixheaacd_pre_reshape_bb_env(
+    mut pstr_mps_state: *mut ia_heaac_mps_state_struct,
+) -> VOID {
+    let mut env_dmx_0: *mut WORD32 = 0 as *mut WORD32;
+    let mut env_dmx_1: *mut WORD32 = 0 as *mut WORD32;
+    let mut free_scratch: *mut core::ffi::c_void = 0 as *mut core::ffi::c_void;
+    let mut tree_config: WORD32 = (*pstr_mps_state).tree_config;
+    free_scratch = (*pstr_mps_state).mps_scratch_mem_v;
+    env_dmx_0 = (*(*pstr_mps_state).array_struct).env_dmx_0;
+    env_dmx_1 = (*(*pstr_mps_state).array_struct).env_dmx_1;
+    match tree_config {
+        6 => {
+            ixheaacd_extract_bb_env(
+                pstr_mps_state,
+                INP_DMX,
+                0 as WORD32 + 4 as WORD32,
+                env_dmx_0,
+                free_scratch,
+                0 as WORD32,
+            );
+            ixheaacd_extract_bb_env(
+                pstr_mps_state,
+                INP_DMX,
+                1 as WORD32 + 4 as WORD32,
+                env_dmx_1,
+                free_scratch,
+                0 as WORD32,
+            );
+        }
+        _ => {
+            ixheaacd_extract_bb_env(
+                pstr_mps_state,
+                INP_DMX,
+                0 as WORD32,
+                env_dmx_0,
+                free_scratch,
+                0 as WORD32,
+            );
+            if (if (*pstr_mps_state).num_input_channels < 2 as core::ffi::c_int {
+                (*pstr_mps_state).num_input_channels as core::ffi::c_int
+            } else {
+                2 as core::ffi::c_int
+            }) == 2 as core::ffi::c_int
+            {
+                ixheaacd_extract_bb_env(
+                    pstr_mps_state,
+                    INP_DMX,
+                    1 as WORD32,
+                    env_dmx_1,
+                    free_scratch,
+                    0 as WORD32,
+                );
+            }
+        }
+    };
+}
