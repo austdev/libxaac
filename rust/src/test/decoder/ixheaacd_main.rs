@@ -620,7 +620,7 @@ pub unsafe extern "C" fn ixheaacd_set_config_param(
         ixheaacd_dec_api
             as unsafe extern "C" fn(pVOID, WORD32, WORD32, pVOID) -> IA_ERRORCODE,
     );
-    let mut p_proc_err_info: *mut ia_error_info_struct = &mut ixheaacd_error_info;
+    let p_proc_err_info: *mut ia_error_info_struct = &raw mut ixheaacd_error_info;
     i = 0 as core::ffi::c_int as LOOPIDX;
     while i < argc {
         if strncmp(
@@ -1448,7 +1448,7 @@ pub unsafe extern "C" fn ixheaacd_get_config_param(
         ixheaacd_dec_api
             as unsafe extern "C" fn(pVOID, WORD32, WORD32, pVOID) -> IA_ERRORCODE,
     );
-    let mut p_proc_err_info: *mut ia_error_info_struct = &mut ixheaacd_error_info;
+    let mut p_proc_err_info: *mut ia_error_info_struct = &raw mut ixheaacd_error_info;
     err_code = (Some(p_ia_process_api.expect("non-null function pointer")))
         .expect(
             "non-null function pointer",
@@ -1744,7 +1744,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             unsafe extern "C" fn() -> VOID,
         >(ixheaacd_error_handler_init),
     ) as Option<unsafe extern "C" fn() -> VOID>;
-    p_proc_err_info = &mut ixheaacd_error_info;
+    p_proc_err_info = &raw mut ixheaacd_error_info;
     ::core::mem::transmute::<
         _,
         fn() -> VOID,
@@ -1817,7 +1817,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
         err_code = IA_TESTBENCH_MFMAN_FATAL_MEM_ALLOC_FAILED as IA_ERRORCODE;
         if err_code != IA_NO_ERROR {
             ixheaacd_error_handler(
-                &mut ixheaacd_ia_testbench_error_info,
+                &raw mut ixheaacd_ia_testbench_error_info,
                 b"API struct alloc\0" as *const u8 as *const core::ffi::c_char
                     as *mut WORD8,
                 err_code,
@@ -1875,7 +1875,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
     if (g_pv_arr_alloc_memory[g_w_malloc_count as usize]).is_null() {
         if err_code != IA_NO_ERROR {
             ixheaacd_error_handler(
-                &mut ixheaacd_ia_testbench_error_info,
+                &raw mut ixheaacd_ia_testbench_error_info,
                 b"API struct alloc\0" as *const u8 as *const core::ffi::c_char
                     as *mut WORD8,
                 err_code,
@@ -1946,7 +1946,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
         err_code = IA_TESTBENCH_MFMAN_FATAL_MEM_ALLOC_FAILED as IA_ERRORCODE;
         if err_code != IA_NO_ERROR {
             ixheaacd_error_handler(
-                &mut ixheaacd_ia_testbench_error_info,
+                &raw mut ixheaacd_ia_testbench_error_info,
                 b"Mem tables alloc\0" as *const u8 as *const core::ffi::c_char
                     as *mut WORD8,
                 err_code,
@@ -2110,7 +2110,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             err_code = IA_TESTBENCH_MFMAN_FATAL_MEM_ALLOC_FAILED as IA_ERRORCODE;
             if err_code != IA_NO_ERROR {
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Mem tables alloc\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code,
@@ -2263,7 +2263,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
                 pv_ia_process_api_obj,
                 IA_API_CMD_SET_INPUT_BYTES,
                 0 as WORD32,
-                &mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
+                &raw mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
             );
             init_iteration += 1;
         } else if raw_testing != 0 {
@@ -2298,7 +2298,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
                 pv_ia_process_api_obj,
                 IA_API_CMD_SET_INPUT_BYTES,
                 0 as WORD32,
-                &mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
+                &raw mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
             );
             init_iteration += 1;
         } else {
@@ -2776,7 +2776,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             err_code = IA_TESTBENCH_MFMAN_FATAL_MEM_ALLOC_FAILED as IA_ERRORCODE;
             if err_code != IA_NO_ERROR {
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Mem tables alloc\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code,
@@ -2895,7 +2895,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             if (g_pv_arr_alloc_memory[g_w_malloc_count as usize]).is_null() {
                 if err_code != IA_NO_ERROR {
                     ixheaacd_error_handler(
-                        &mut ixheaacd_ia_testbench_error_info,
+                        &raw mut ixheaacd_ia_testbench_error_info,
                         b"Mem tables alloc\0" as *const u8 as *const core::ffi::c_char
                             as *mut WORD8,
                         err_code,
@@ -3445,7 +3445,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
                         pv_ia_process_api_obj,
                         IA_API_CMD_SET_INPUT_BYTES,
                         0 as WORD32,
-                        &mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
+                        &raw mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
                     );
                 } else {
                     err_code = (Some(
@@ -3499,7 +3499,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
                         pv_ia_process_api_obj,
                         IA_API_CMD_SET_INPUT_BYTES,
                         0 as WORD32,
-                        &mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
+                        &raw mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
                     );
                 } else if i_buff_size != 0 as core::ffi::c_int {
                     err_code = (Some(
@@ -3522,7 +3522,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
                     pv_ia_process_api_obj,
                     IA_API_CMD_SET_INPUT_BYTES,
                     0 as WORD32,
-                    &mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
+                    &raw mut ixheaacd_i_bytes_to_read as *mut WORD32 as pVOID,
                 );
             }
         } else {
@@ -4601,7 +4601,7 @@ unsafe fn main_0(
             if g_pf_inp.is_null() {
                 err_code = IA_TESTBENCH_MFMAN_FATAL_FILE_OPEN_FAILED as WORD32;
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Input File\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code as IA_ERRORCODE,
@@ -4625,14 +4625,14 @@ unsafe fn main_0(
             if g_pf_meta.is_null() {
                 err_code = IA_TESTBENCH_MFMAN_FATAL_FILE_OPEN_FAILED as WORD32;
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Metadata File\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code as IA_ERRORCODE,
                 );
                 exit(1 as core::ffi::c_int);
             }
-            err_code = ixheaacd_read_metadata_info(g_pf_meta, &mut meta_info) as WORD32;
+            err_code = ixheaacd_read_metadata_info(g_pf_meta, &raw mut meta_info) as WORD32;
             if err_code == -(1 as core::ffi::c_int) {
                 exit(1 as core::ffi::c_int);
             }
@@ -4653,7 +4653,7 @@ unsafe fn main_0(
             if g_pf_out.is_null() {
                 err_code = IA_TESTBENCH_MFMAN_FATAL_FILE_OPEN_FAILED as WORD32;
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Output File\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code as IA_ERRORCODE,
@@ -4667,7 +4667,7 @@ unsafe fn main_0(
         print_usage();
         err_code = IA_TESTBENCH_MFMAN_FATAL_FILE_OPEN_FAILED as WORD32;
         ixheaacd_error_handler(
-            &mut ixheaacd_ia_testbench_error_info,
+            &raw mut ixheaacd_ia_testbench_error_info,
             b"Input or Output File\0" as *const u8 as *const core::ffi::c_char
                 as *mut WORD8,
             err_code as IA_ERRORCODE,
@@ -4687,7 +4687,7 @@ unsafe fn main_0(
                 print_usage();
                 err_code = IA_TESTBENCH_MFMAN_FATAL_FILE_OPEN_FAILED as WORD32;
                 ixheaacd_error_handler(
-                    &mut ixheaacd_ia_testbench_error_info,
+                    &raw mut ixheaacd_ia_testbench_error_info,
                     b"Metadata File\0" as *const u8 as *const core::ffi::c_char
                         as *mut WORD8,
                     err_code as IA_ERRORCODE,
@@ -4728,7 +4728,7 @@ unsafe fn main_0(
     }
     if !g_pf_meta.is_null() {
         fclose(g_pf_meta);
-        metadata_mp4_stsz_size_free(&mut meta_info);
+        metadata_mp4_stsz_size_free(&raw mut meta_info);
     }
     FileWrapper_Close(g_pf_inp);
     mpeg_d_drc_on = 0 as core::ffi::c_int as WORD32;
