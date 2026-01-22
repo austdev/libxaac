@@ -1,3 +1,21 @@
+
+include(FetchContent)
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.6 # Optionally specify a commit hash, version tag or branch here
+)
+set(Rust_TOOLCHAIN "nightly-2025-12-15") # must precede the line below
+FetchContent_MakeAvailable(Corrosion)
+
+#message(FATAL_ERROR "${CMAKE_CURRENT_LIST_DIR}")
+corrosion_import_crate(
+    MANIFEST_PATH   ${CMAKE_CURRENT_LIST_DIR}/../../rust/Cargo.toml
+#    CRATE_TYPES     bin
+    IMPORTED_CRATES some_crates    # logging (optional)
+)
+message(STATUS "Rust crates imported: ${some_crates}")
+
 list(APPEND XAACDEC_SRCS "${XAAC_ROOT}/test/decoder/ixheaacd_error.c"
      "${XAAC_ROOT}/test/decoder/ixheaacd_fileifc.c" "${XAAC_ROOT}/test/decoder/ixheaacd_main.c"
      "${XAAC_ROOT}/test/decoder/ixheaacd_metadata_read.c")
