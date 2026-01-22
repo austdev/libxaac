@@ -7,7 +7,12 @@
     unused_mut
 )]
 #![feature(extern_types)]
-use ::rust::*;
+
+mod ixheaacd_metadata_read;
+mod ixheaacd_error;
+mod ixheaacd_fileifc;
+
+#[link(name="libxaacdec-ref")]
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
