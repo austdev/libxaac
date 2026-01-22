@@ -195,6 +195,56 @@ synth_buf:
                    synth pointer starts here
 ```
 
+## Buffer Size Analysis
+
+###  1. Input from out_buffer (READ)
+```
+  // C code:
+  ixheaacd_mem_cpy(out_buffer, synth_buf + MAX_PITCH - LEN_SUBFR,
+                   synth_delay + len_fr + LEN_SUBFR);
+```
+Elements read: synth_delay + len_fr + LEN_SUBFR
+- Typical: 448 + 1024 + 64 = 1536 elements
+
+###  2. Output to out_buffer (WRITE)
+```
+  // C code:
+  ixheaacd_mem_cpy(signal_out, out_buffer,
+                   (lpd_sbf_len + 2) * LEN_SUBFR + LEN_SUBFR);
+```
+Elements written: (lpd_sbf_len + 2) * LEN_SUBFR + LEN_SUBFR = (lpd_sbf_len + 3) * LEN_SUBFR
+- Typical: (8 + 3) * 64 = 704 elements
+
+###  3. Intermediate synth_buf
+
+  Size: MAX_PITCH + SYNTH_DELAY_LMAX + LEN_SUPERFRAME = 411 + 448 + 1024 = 1883 elements
+
+###  4. Intermediate signal_out
+
+  Size: LEN_SUPERFRAME = 1024 elements
+
+###  5. bass_post_filter parameters
+```
+┌───────────┬───────────────────────────────────────────┬──────────────────┐
+│ Parameter │                  C Code                   │      Value       │
+├───────────┼───────────────────────────────────────────┼──────────────────┤
+│ len_fr    │ (lpd_sbf_len + 2) * LEN_SUBFR + LEN_SUBFR │ 704              │
+├───────────┼───────────────────────────────────────────┼──────────────────┤
+│ len2      │ len_fr - (lpd_sbf_len + 4) * LEN_SUBFR    │ 1024 - 768 = 256 │
+└───────────┴───────────────────────────────────────────┴──────────────────┘
+
+Summary Formula
+
+Input buffer minimum:  synth_delay + len_fr + LEN_SUBFR
+                     = (lpd_sbf_len - 1) * LEN_SUBFR + len_fr + LEN_SUBFR
+                     = (lpd_sbf_len * LEN_SUBFR) + len_fr
+
+Output buffer minimum: (lpd_sbf_len + 3) * LEN_SUBFR
+```
+With typical values (len_fr=1024, lpd_sbf_len=8, LEN_SUBFR=64):
+- Input: 1536 elements
+- Output: 704 elements
+
 ## Notes for Rust Migration
 
 1. **Buffer safety**: Multiple index calculations require careful bounds checking

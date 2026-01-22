@@ -373,6 +373,24 @@ mod tests {
     use approx::relative_ne;
     use testdata::TestFile;
 
+    #[test]
+    fn test_constants() {
+        assert_eq!(LEN_SUPERFRAME, crate::gen_ixheaacd_ref::LEN_SUPERFRAME as usize);
+        assert_eq!(LEN_SUBFR, crate::gen_ixheaacd_ref::LEN_SUBFR as usize);
+        assert_eq!(LEN_FRAME, crate::gen_ixheaacd_ref::LEN_FRAME as usize);
+        assert_eq!(NUM_FRAMES, crate::gen_ixheaacd_ref::NUM_FRAMES as usize);
+        assert_eq!(NUM_SUBFR_SUPERFRAME, crate::gen_ixheaacd_ref::NUM_SUBFR_SUPERFRAME as usize);
+        assert_eq!(NUM_SUBFR_SUPERFRAME_BY2, crate::gen_ixheaacd_ref::NUM_SUBFR_SUPERFRAME_BY2 as usize);
+        assert_eq!(SYNTH_DELAY_LMAX, (NUM_SUBFR_SUPERFRAME_BY2 - 1) * LEN_SUBFR);
+        assert_eq!(ORDER, crate::gen_ixheaacd_ref::ORDER as usize);
+        assert_eq!(FSCALE_DENOM, crate::gen_ixheaacd_ref::FSCALE_DENOM as usize);
+        assert_eq!(FAC_FSCALE_MAX, crate::gen_ixheaacd_ref::FAC_FSCALE_MAX as usize);
+        assert_eq!(TMIN, crate::gen_ixheaacd_ref::TMIN as usize);
+        assert_eq!(TMAX, crate::gen_ixheaacd_ref::TMAX as usize);
+        assert_eq!(MAX_PITCH, crate::gen_ixheaacd_ref::MAX_PITCH as usize);
+        assert_eq!(FILTER_DELAY, crate::gen_ixheaacd_ref::FILTER_DELAY as usize);
+    }
+
     // -------------------------------------------------------------------------
     // Test Data Structures (for JSON deserialization)
     // -------------------------------------------------------------------------

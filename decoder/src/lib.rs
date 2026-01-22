@@ -18,6 +18,33 @@ mod integration_test {
     use std::slice;
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn ixheaacd_lpd_bpf_fix(
+        usac_data: *mut ia_usac_data_struct,
+        is_short: WORD32,
+        out_buffer: *mut FLOAT32,
+        st: ia_usac_lpd_decoder_handle,
+    ) -> WORD32 {
+        if usac_data.is_null() || out_buffer.is_null() || st.is_null() {
+            return -1;
+        }
+        unsafe {
+            let lpd_sbf_len = (NUM_FRAMES * (*usac_data).num_subfrm as u32) / 2;
+            let synth_delay = (lpd_sbf_len - 1) * LEN_SUBFR;
+            let buffer_slice = slice::from_raw_parts_mut(
+                out_buffer, 
+                (synth_delay + (*usac_data).ccfl as u32 + LEN_SUBFR) as usize,
+            );
+            let res = ixheaacd::lpd_bpf_fix(
+                &(*usac_data),
+                is_short != 0,
+                buffer_slice,
+                &mut (*st),
+            );
+            if res.is_ok() { 0 } else { -1 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn ixheaacd_calc_window(
         win: *mut *mut WORD32,
         len: WORD32,
