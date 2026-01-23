@@ -1,4 +1,4 @@
-// decoder::ixheaacd_basic_ops
+// decoder::ixheaacd::basic_ops
 
 //! Basic operations for the decoder, DSP primitives
 //!
@@ -77,9 +77,8 @@ impl FixedPointOps for i32 {
 }
 
 
-
 // ============================================================================
-// Function stubs from ixheaacd_vec_baisc_ops.h (in order)
+// Functions from ixheaacd_vec_baisc_ops.h (in order)
 // ============================================================================
 
 /// Combines Forward Aliasing Cancellation (FAC) data by adding two sources with Q-format alignment.

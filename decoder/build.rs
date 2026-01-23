@@ -15,12 +15,13 @@ fn main() {
 
     let  ixheaacd_headers = vec!(
         "ixheaacd_vec_baisc_ops.h",
+        "ixheaacd_main.h",
     );
 
     let bindings = bindgen::Builder::default()
         .headers(ixheaacd_headers)
         .clang_args(compiler_options)
-        .raw_line("#![allow(non_camel_case_types, unused)]")
+        .raw_line("#![allow(non_camel_case_types, non_snake_case, unused)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");

@@ -20,6 +20,9 @@
 #ifndef IXHEAACD_SBRDECODER_H
 #define IXHEAACD_SBRDECODER_H
 
+#include "ixheaacd_bitbuffer.h"
+#include "ixheaacd_drc_data_struct.h"
+
 #define EXT_DYNAMIC_RANGE 11
 
 #define EXT_SAC_DATA 12

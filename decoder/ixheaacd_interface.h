@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_INTERFACE_H
 #define IXHEAACD_INTERFACE_H
 
+#include "ixheaac_type_def.h"
+
 enum {
   LN = 2048,
   SN = 256,

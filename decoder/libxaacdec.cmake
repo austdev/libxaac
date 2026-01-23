@@ -121,7 +121,7 @@ list(
   "${XAAC_ROOT}/decoder/ixheaacd_thumb_ps_dec.c"
   "${XAAC_ROOT}/decoder/ixheaacd_tns.c"
   "${XAAC_ROOT}/decoder/ixheaacd_usac_ec.c"
-  "${XAAC_ROOT}/decoder/ixheaacd_Windowing.c")
+  "$<$<BOOL:${RC_FALLBACK}>:${XAAC_ROOT}/decoder/ixheaacd_Windowing.c>")
 
 set(LIBXAACDEC_INCLUDES ${XAAC_ROOT}/decoder ${XAAC_ROOT}/decoder/drc_src)
 include_directories(${LIBXAACDEC_INCLUDES})

@@ -19,7 +19,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}")
 else()
     set(RUST_PROFILE "release")
-    set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR} --release")
+    set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}" --release)
 endif()
 
 if(RC_FALLBACK)

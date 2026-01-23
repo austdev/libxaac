@@ -20,6 +20,9 @@
 #ifndef IXHEAACD_ACELP_INFO_H
 #define IXHEAACD_ACELP_INFO_H
 
+#include "ixheaac_type_def.h"
+#include "ixheaacd_cnst.h"
+
 typedef struct {
   WORD32 acelp_core_mode;
   WORD32 mod[NUM_FRAMES];

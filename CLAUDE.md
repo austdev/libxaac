@@ -52,7 +52,12 @@ The new Rust implementation is committing into dev/rusty_water branch.
 
 ### Rust implementation rules
 
-- Don't introduce new immutable variable if it will be used just once
-- Don't borrow struct for accessing its members if it passed by ref already 
-- Prefer iterators / zipped iterators if there are no complex indexes manipulation 
-- Implement Rust idiomatic code 
+- Do not introduce new immutable variable if it will be used just once
+- Do not borrow struct for accessing its members if it passed by ref already
+- Do not introduce a new constant if it does not exist in the original code. Keep constant calculations in place.
+- Prefer iterators / zipped iterators if there are no complex indexes manipulation
+- Implement Rust idiomatic code
+
+### Rust code style
+
+- Use stacked arguments list with end-of-line parameter documentation (inline annotations) for function with more that two arguments

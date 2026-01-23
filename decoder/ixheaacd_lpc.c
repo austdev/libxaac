@@ -746,6 +746,7 @@ VOID ixheaacd_lpd_dec_update(ia_usac_lpd_decoder_handle tddec,
   return;
 }
 
+#if RC_FALLBACK
 WORD32 ixheaacd_lpd_bpf_fix(ia_usac_data_struct *usac_data,
                             WORD32 is_short_flag, FLOAT32 out_buffer[],
                             ia_usac_lpd_decoder_handle st) {
@@ -826,3 +827,4 @@ WORD32 ixheaacd_lpd_bpf_fix(ia_usac_data_struct *usac_data,
                    (lpd_sbf_len + 2) * LEN_SUBFR + LEN_SUBFR);
   return err;
 }
+#endif //RC_FALLBACK

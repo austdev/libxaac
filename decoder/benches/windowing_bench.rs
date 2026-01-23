@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use decoder::ixheaacd::OffsetLengths;
+use std::hint::black_box;
 
 // ============================================================================
 // Test Fixtures - Realistic AAC/USAC buffer configurations

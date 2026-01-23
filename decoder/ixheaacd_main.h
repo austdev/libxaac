@@ -20,6 +20,13 @@
 #ifndef IXHEAACD_MAIN_H
 #define IXHEAACD_MAIN_H
 
+#include "ixheaacd_interface.h"
+#include "ixheaacd_tns_usac.h"
+#include "ixheaacd_acelp_info.h"
+#include "ixheaacd_sbrdecoder.h"
+#include "ixheaacd_ec_struct_def.h"
+#include "ixheaacd_sbrdecsettings.h"
+
 VOID ixheaacd_imdct_flt(FLOAT32 in_data[], FLOAT32 out_data[], WORD32 len);
 
 VOID usac_tw_imdct(FLOAT32 in_data[], FLOAT32 out_data[], WORD32 len);
