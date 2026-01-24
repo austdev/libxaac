@@ -339,4 +339,74 @@ mod integration_test {
         }
     }
 
+    #[unsafe(no_mangle)]
+    pub extern "C" fn ixheaacd_acelp_imdct(
+        imdct_in: *mut WORD32,
+        npoints: WORD32,
+        qshift: *mut WORD8,
+        scratch: *mut WORD32,
+    ) {
+        if imdct_in.is_null() || qshift.is_null() || scratch.is_null() || npoints <= 0 {
+            return;
+        }
+        unsafe {
+            let imdct_len = (npoints / 2) as usize;
+            let imdct_slice = slice::from_raw_parts_mut(imdct_in, imdct_len);
+            let scratch_slice = slice::from_raw_parts_mut(scratch, 1024);
+            ixheaacd::acelp_imdct(imdct_slice, npoints, &mut *qshift, scratch_slice);
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn ixheaacd_fd_imdct_long(
+        usac_data: *mut ia_usac_data_struct,
+        i_ch: WORD32,
+        fac_idata: *mut WORD32,
+        ixheaacd_drc_offset: *mut offset_lengths,
+        fac_q: WORD8,
+    ) -> IA_ERRORCODE {
+        if usac_data.is_null() || fac_idata.is_null() || ixheaacd_drc_offset.is_null() {
+            return -1;
+        }
+        unsafe {
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            // FAC buffer size: 2*FAC_LENGTH+16 = 272
+            let fac_slice = slice::from_raw_parts_mut(fac_idata, 272);
+            let result = ixheaacd::fd_imdct_long(
+                &mut *usac_data,
+                i_ch,
+                fac_slice,
+                &offset,
+                fac_q,
+            );
+            if result.is_ok() { 0 } else { -1 }
+        }
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn ixheaacd_fd_imdct_short(
+        usac_data: *mut ia_usac_data_struct,
+        i_ch: WORD32,
+        fac_data_out: *mut WORD32,
+        ixheaacd_drc_offset: *mut offset_lengths,
+        fac_q: WORD8,
+    ) -> IA_ERRORCODE {
+        if usac_data.is_null() || fac_data_out.is_null() || ixheaacd_drc_offset.is_null() {
+            return -1;
+        }
+        unsafe {
+            let offset = OffsetLengths::from_c_struct(ixheaacd_drc_offset);
+            // FAC buffer size: 2*FAC_LENGTH+16 = 272
+            let fac_slice = slice::from_raw_parts_mut(fac_data_out, 272);
+            let result = ixheaacd::fd_imdct_short(
+                &mut *usac_data,
+                i_ch,
+                fac_slice,
+                &offset,
+                fac_q,
+            );
+            if result.is_ok() { 0 } else { -1 }
+        }
+    }
+
 }
