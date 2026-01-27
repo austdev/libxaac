@@ -24,15 +24,16 @@ pub type ImdctResult<T> = Result<T, ImdctError>;
 /// ```
 pub fn acelp_imdct(
     imdct_in: &mut [i32],  // Input/output: spectral coefficients -> time samples (in-place)
-    npoints: i32,          // Total points = 2 * IMDCT length (e.g., 2048 for 1024-point IMDCT)
     qshift: &mut i8,       // Quantization shift factor (modified on output)
     scratch: &mut [i32],   // Scratch buffer (min 1024 elements)
 ) {
+    let npoints = imdct_in.len() * 2;
+
     #[cfg(feature = "fallback")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_acelp_imdct(
             imdct_in.as_mut_ptr(),
-            npoints,
+            npoints as i32,
             qshift as *mut i8,
             scratch.as_mut_ptr(),
         );
@@ -118,5 +119,58 @@ pub fn fd_imdct_short(
     {
         let _ = (usac_data, i_ch, fac_data_out, offset, fac_q);
         todo!("Pure Rust implementation - see docs/claude_imdct_analysis.md")
+    }
+}
+
+// =============================================================================
+// Unit Tests
+// =============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde::Deserialize;
+    use testdata::TestFile;
+
+    #[derive(Debug, Deserialize)]
+    struct AcelpImdctTestData {
+        imdct_in: Vec<i32>,
+        qshift_in: i8,
+        output: Vec<i32>,
+        qshift_out: i8,
+    }
+
+    
+    #[testdata::files]
+    #[test]
+    fn test_acelp_imdct(
+        #[glob = "tests/fixtures/acelp_imdct_*.json"] test_data: &TestFile,
+    ) {
+        let test_data: AcelpImdctTestData =
+            serde_json::from_slice(&test_data.raw_read())
+            .expect("Failed to parse test data JSON");
+
+        let mut imdct_in = test_data.imdct_in.clone();
+        let mut qshift = test_data.qshift_in;
+        let mut scratch = vec![0i32; 1024];
+
+        acelp_imdct(&mut imdct_in, &mut qshift, &mut scratch);
+
+        assert_eq!(qshift, test_data.qshift_out, "qshift output mismatch");
+        assert_eq!(imdct_in.len(), test_data.output.len(), "Output length mismatch");
+
+        let mut failed = 0;
+        for i in 0..imdct_in.len() {
+            if imdct_in[i] != test_data.output[i] {
+                eprintln!("Mismatch at index {}: {} instead of {}", i, imdct_in[i], test_data.output[i]);
+                failed += 1;
+                if failed > 10 { 
+                    break;
+                }
+            }
+        }
+        if failed > 0 {
+            panic!();
+        }
     }
 }
