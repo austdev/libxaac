@@ -4,6 +4,17 @@ enable_language(ASM)
 
 option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." ON)
 
+# Unify output layout for all generators
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+foreach(cfg IN ITEMS Debug Release RelWithDebInfo MinSizeRel)
+  string(TOUPPER ${cfg} CFGU)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CFGU} ${CMAKE_CURRENT_BINARY_DIR})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CFGU} ${CMAKE_CURRENT_BINARY_DIR})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CFGU} ${CMAKE_CURRENT_BINARY_DIR})
+endforeach()
+
 option(BUILD64 "Build for 64 bit" OFF)
 set(XAAC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XAAC_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}")

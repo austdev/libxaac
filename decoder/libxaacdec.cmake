@@ -137,6 +137,7 @@ else()
 endif()
 
 add_library(libxaacdec SHARED ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+set_target_properties(libxaacdec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(RC_FALLBACK)
     set_target_properties(libxaacdec PROPERTIES 
