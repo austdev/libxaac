@@ -1,4 +1,4 @@
-
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.tools/CMakeFetchContent/" CACHE PATH "")
 include(FetchContent)
 FetchContent_Declare(
     Corrosion
