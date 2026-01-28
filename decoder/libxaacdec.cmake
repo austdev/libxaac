@@ -143,9 +143,11 @@ if(RC_FALLBACK)
         OUTPUT_NAME "libxaacdec-ref"
     )
 else()
-    set(RUST_DECODER_LIB 
-        "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}"
-    )
+    if(APPLE)
+        set(RUST_DECODER_LIB "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/libdecoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    else()
+        set(RUST_DECODER_LIB "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    endif()
 
     # Create a custom target and command to build Rust library
     add_custom_command(
@@ -166,3 +168,4 @@ else()
         IMPORTED_LOCATION ${RUST_DECODER_LIB}
     )
 endif()
+ 

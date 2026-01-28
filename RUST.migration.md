@@ -154,10 +154,10 @@ You could find declarations of the FFI functions for the next step in this file.
 
 ```bash
 cd libxaac # root of repo
-cmake -DRC_FALLBACK -DCMAKE_BUILD_TYPE=Release -B build -G Ninja
-cmake --build # Runs cmake build once to create reference C lib
+cmake --fresh -B build -G Ninja -DRC_FALLBACK=ON
+cmake --build build -t xaacdec # Runs cmake build once to create reference C lib
 cd decoder
-cargo build --features fallback
+cargo build -F fallback
 ```
 
 #### Step 2.2: Create Rust functions
@@ -220,7 +220,7 @@ mod tests {
 
 ```bash
 # Run tests with original C implementation
-cargo test --features fallback
+cargo test -F fallback
 ```
 
 ---
@@ -349,8 +349,8 @@ mod integration_test {
 
 ```bash
 cd libxaac # root of repo
-cmake -B build -G Ninja  -DCMAKE_BUILD_TYPE=Debug
-cmake --build 
+cmake --fresh -B build -G Ninja  -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -t xaacdec
 
 # Output: build/xaacdec
 ```
@@ -477,26 +477,22 @@ let bindings = bindgen::Builder::default()
     .expect("Unable to generate bindings");
 ```
 
-### D. Performance Comparison Template
+### D. Building commands
 
-```rust
-// benches/comparison_bench.rs
-use divan::Bencher;
+#### Building reference libraries and tools
 
-#[divan::bench]
-fn rust_implementation(bencher: Bencher) {
-    bencher.bench(|| {
-        // Rust code
-    });
-}
+```bash
+cd libxaac # root of repo
+cmake --fresh -B build -G Ninja -DRC_FALLBACK=ON  # -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -t xaacdec xaacenc
+```
 
-#[cfg(feature = "fallback")]
-#[divan::bench]
-fn c_implementation(bencher: Bencher) {
-    bencher.bench(|| {
-        // C code via FFI
-    });
-}
+#### Building partly migrated decoder
+
+```bash
+cd libxaac # root of repo
+cmake --fresh -B build -G Ninja # -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -t xaacdec
 ```
 
 ### E. Migration Progress Tracking
@@ -507,8 +503,8 @@ fn c_implementation(bencher: Bencher) {
 | ----- | --------- | ------ |
 | **Phase 1: Initialization** | Core setup | ✅ Complete |
 | **Phase 2: DSP Primitives** | | 🔄 In Progress |
-| ├─ `scale_down` | Basic ops | ✅ Complete |
-| ├─ `scale_down_adj` | Basic ops | ✅ Complete |
+| ├─ `ixheaacd_basic_ops` | Basic ops | ✅ Complete |
+| ├─ `ixheaacd_windowing` | Windowing | ✅ Complete |
 | └─ Others | ~50 functions | ⏳ Pending |
 | **Phase 3: Bitstream** | Parsing/unpacking | 📋 Planned |
 | **Phase 4: Core Decode** | IMDCT, TNS, etc. | 📋 Planned |

@@ -16,11 +16,9 @@ if(NOT RC_FALLBACK)
         target_link_libraries(xaacdec kernel32 ws2_32 ntdll userenv dbghelp)
     elseif(APPLE)
         target_link_libraries(xaacdec pthread)
-        set_target_properties(xaacdec PROPERTIES
-            LINK_FLAGS
-                "-framework Security"
-                "-framework CoreFoundation"
-        )
+        set_target_properties(xaacdec PROPERTIES 
+            LINK_FLAGS 
+            "-framework Security -framework CoreFoundation")
     elseif(UNIX)
         target_link_libraries(xaacdec pthread dl m)
     endif()
