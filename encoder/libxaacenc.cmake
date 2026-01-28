@@ -138,3 +138,8 @@ include_directories(${LIBXAACENC_INCLUDES})
 include("${XAAC_ROOT}/encoder/drc_src/libxaacenc_drc.cmake")
 
 add_library(libxaacenc STATIC ${LIBXAACENC_SRCS} ${LIBXAAC_COMMON_SRCS})
+if(WIN32)
+    set_target_properties(libxaacenc PROPERTIES OUTPUT_NAME "libxaacenc")
+else()
+    set_target_properties(libxaacenc PROPERTIES OUTPUT_NAME "xaacenc")
+endif()

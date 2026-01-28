@@ -4,7 +4,11 @@ use std::path::PathBuf;
 fn main() {
     if cfg!(feature = "fallback") {
         println!("cargo:rustc-link-search=native=build");
-        println!("cargo:rustc-link-lib=static=libxaacdec-ref");
+        if cfg!(target_os = "windows") {
+            println!("cargo:rustc-link-lib=static=libxaacdec-ref");
+        } else {
+            println!("cargo:rustc-link-lib=static=xaacdec-ref");
+        }
     }
     //println!("cargo:rerun-if-changed=ixheaacd_vec_baisc_ops.h");
     let  compiler_options = vec!(
@@ -21,7 +25,7 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .headers(ixheaacd_headers)
         .clang_args(compiler_options)
-        .raw_line("#![allow(non_camel_case_types, non_snake_case, unused)]")
+        .raw_line("#![allow(non_camel_case_types, non_snake_case, unused, non_upper_case_globals)]")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");

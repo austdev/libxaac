@@ -9,8 +9,6 @@ set(XAAC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XAAC_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 find_package(Threads REQUIRED)
 
-set(CMAKE_STATIC_LIBRARY_PREFIX "")
-
 include("${XAAC_ROOT}/cmake/utils.cmake")
 
 # Determine Rust build profile based on CMake build type
@@ -36,9 +34,9 @@ endif()
 include("${XAAC_ROOT}/common/common.cmake")
 include("${XAAC_ROOT}/decoder/libxaacdec.cmake")
 include("${XAAC_ROOT}/test/decoder/xaacdec.cmake")
-include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
+#include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
 
 include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
 include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
-include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
+#include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
 

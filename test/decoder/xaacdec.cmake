@@ -16,28 +16,23 @@ if(NOT RC_FALLBACK)
         target_link_libraries(xaacdec kernel32 ws2_32 ntdll userenv dbghelp)
     elseif(APPLE)
         target_link_libraries(xaacdec pthread)
-        set_target_properties(xaacdec PROPERTIES
-            LINK_FLAGS
-                "-framework Security"
-                "-framework CoreFoundation"
-        )
+        set_target_properties(xaacdec PROPERTIES 
+            LINK_FLAGS 
+            "-framework Security -framework CoreFoundation")
     elseif(UNIX)
         target_link_libraries(xaacdec pthread dl m)
     endif()
 endif()
 
 if(WIN32)
-  set_target_properties(
-    xaacdec
-    PROPERTIES
-      COMPILE_FLAGS
-      "-UARM_PROFILE_HW -UARM_PROFILE_BOARD -DDRC_ENABLE -DMULTICHANNEL_ENABLE -DECLIPSE -DWIN32 -D_CRT_SECURE_NO_WARNINGS -DLOUDNESS_LEVELING_SUPPORT"
-  )
-else()
-  set_target_properties(
-    xaacdec
-    PROPERTIES
-      COMPILE_FLAGS
-      "-UARM_PROFILE_HW -UARM_PROFILE_BOARD -DDRC_ENABLE -DMULTICHANNEL_ENABLE -DECLIPSE -DWIN32 -DLOUDNESS_LEVELING_SUPPORT"
-  )
+    target_compile_definitions(xaacdec PRIVATE
+       WIN32  _CRT_SECURE_NO_WARNINGS)
 endif()
+
+target_compile_definitions(xaacdec PRIVATE
+    DRC_ENABLE MULTICHANNEL_ENABLE ECLIPSE LOUDNESS_LEVELING_SUPPORT
+    WIN32) # TODO: fix WIN32 diverging from _WIN32
+
+target_compile_options(xaacdec PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/UARM_PROFILE_HW;/UARM_PROFILE_BOARD>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-UARM_PROFILE_HW;-UARM_PROFILE_BOARD>)

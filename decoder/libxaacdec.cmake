@@ -137,15 +137,17 @@ else()
 endif()
 
 add_library(libxaacdec STATIC ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+if(WIN32)
+    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "libxaacdec")
+else()
+    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
+endif()
 
 if(RC_FALLBACK)
-    set_target_properties(libxaacdec PROPERTIES 
-        OUTPUT_NAME "libxaacdec-ref"
-    )
+    get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)
+    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "${FILE_NAME}-ref")
 else()
-    set(RUST_DECODER_LIB 
-        "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}"
-    )
+    set(RUST_DECODER_LIB "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
     # Create a custom target and command to build Rust library
     add_custom_command(
@@ -166,3 +168,4 @@ else()
         IMPORTED_LOCATION ${RUST_DECODER_LIB}
     )
 endif()
+ 
