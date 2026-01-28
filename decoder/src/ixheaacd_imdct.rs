@@ -14,6 +14,58 @@ pub enum ImdctError {
 
 pub type ImdctResult<T> = Result<T, ImdctError>;
 
+// required for c2rust code
+type WORD32 = i32;
+type WORD8 = i8;
+type VOID = ();
+
+
+#[cfg(not(feature = "fallback"))]
+unsafe extern "C" fn ixheaacd_fft_based_imdct(
+    mut data: *mut WORD32,
+    mut npoints: WORD32,
+    mut preshift: *mut WORD32,
+    mut tmp_data: *mut WORD32,
+) -> VOID {
+    let mut data_r: *mut WORD32 = 0 as *mut WORD32;
+    let mut data_i: *mut WORD32 = 0 as *mut WORD32;
+    let mut nlength: WORD32 = npoints >> 1 as core::ffi::c_int;
+    let mut cos_ptr: *const WORD32 = 0 as *const WORD32;
+    let mut sin_ptr: *const WORD32 = 0 as *const WORD32;
+    data_r = tmp_data;
+    data_i = tmp_data.offset(512 as core::ffi::c_int as isize);
+
+    let _ = (data, npoints, preshift, tmp_data, data_r, data_i, nlength, cos_ptr, sin_ptr);
+
+    //todo!("Pure Rust implementation pending");
+
+    // if nlength == 512 as core::ffi::c_int {
+    //     cos_ptr = ixheaacd_pre_post_twid_cos_512.as_ptr();
+    //     sin_ptr = ixheaacd_pre_post_twid_sin_512.as_ptr();
+    // } else if nlength == 384 as core::ffi::c_int {
+    //     cos_ptr = ixheaacd_pre_post_twid_cos_384.as_ptr();
+    //     sin_ptr = ixheaacd_pre_post_twid_sin_384.as_ptr();
+    // } else if nlength == 64 as core::ffi::c_int {
+    //     cos_ptr = ixheaacd_pre_post_twid_cos_64.as_ptr();
+    //     sin_ptr = ixheaacd_pre_post_twid_sin_64.as_ptr();
+    // } else if nlength == 48 as core::ffi::c_int {
+    //     cos_ptr = ixheaacd_pre_post_twid_cos_48.as_ptr();
+    //     sin_ptr = ixheaacd_pre_post_twid_sin_48.as_ptr();
+    // } else {
+    //     cos_ptr = ixheaacd_pre_post_twid_cos_48.as_ptr();
+    //     sin_ptr = ixheaacd_pre_post_twid_sin_48.as_ptr();
+    // }
+    // (Some(ixheaacd_calc_pre_twid.expect("non-null function pointer")))
+    //     .expect(
+    //         "non-null function pointer",
+    //     )(data, data_r, data_i, nlength, cos_ptr, sin_ptr);
+    // ixheaacd_complex_fft(data_r, data_i, nlength, 1 as WORD32, preshift);
+    // (Some(ixheaacd_calc_post_twid.expect("non-null function pointer")))
+    //     .expect(
+    //         "non-null function pointer",
+    //     )(data, data_r, data_i, nlength, cos_ptr, sin_ptr);
+}
+
 /// Low-level FFT-based IMDCT computation.
 ///
 /// Transforms spectral coefficients in-place to time-domain samples.
@@ -41,8 +93,31 @@ pub fn acelp_imdct(
 
     #[cfg(not(feature = "fallback"))]
     {
-        let _ = (imdct_in, npoints, qshift, scratch);
-        todo!("Pure Rust implementation pending")
+        unsafe {
+            let mut preshift: WORD32 = 0 as WORD32;
+            let mut i: WORD32 = 0;
+            let mut k: WORD32 = npoints as WORD32 / 2 as WORD32;
+            while (k as core::ffi::c_int & 1 as core::ffi::c_int == 0 as core::ffi::c_int)
+                as core::ffi::c_int & (k != 1 as core::ffi::c_int) as core::ffi::c_int != 0
+            {
+                k = k >> 1 as core::ffi::c_int;
+                preshift += 1;
+            }
+            if k != 1 as core::ffi::c_int {
+                i = 0 as core::ffi::c_int as WORD32;
+                while i < npoints as core::ffi::c_int / 2 as core::ffi::c_int {
+                    imdct_in[i as usize] = ((imdct_in[i as usize]
+                        / 3 as core::ffi::c_int) << 1 as core::ffi::c_int) as WORD32;
+                    i += 1;
+                }
+                preshift += 1;
+            }
+            ixheaacd_fft_based_imdct(imdct_in.as_mut_ptr(), (npoints / 2) as i32, &mut preshift, scratch.as_mut_ptr());
+            preshift += 2 as core::ffi::c_int;
+            *qshift = (*qshift as core::ffi::c_int - preshift as core::ffi::c_int) as WORD8;
+        }
+        // let _ = (imdct_in, npoints, qshift, scratch);
+        // todo!("Pure Rust implementation pending")
     }
 }
 
