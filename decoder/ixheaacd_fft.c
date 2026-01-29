@@ -36,13 +36,13 @@ extern const WORD8 ixheaacd_mps_dig_rev[8];
 
 #define PLATFORM_INLINE __inline
 
-#define DIG_REV(i, m, j)                                    \
-  do {                                                      \
-    unsigned _ = (i);                                       \
-    _ = ((_ & 0x33333333) << 2) | ((_ & ~0x33333333) >> 2); \
-    _ = ((_ & 0x0F0F0F0F) << 4) | ((_ & ~0x0F0F0F0F) >> 4); \
-    _ = ((_ & 0x00FF00FF) << 8) | ((_ & ~0x00FF00FF) >> 8); \
-    (j) = _ >> (m);                                         \
+#define DIG_REV(i, m, j)                                          \
+  do {                                                            \
+    unsigned val = (i);                                           \
+    val = ((val & 0x33333333) << 2) | ((val & ~0x33333333) >> 2); \
+    val = ((val & 0x0F0F0F0F) << 4) | ((val & ~0x0F0F0F0F) >> 4); \
+    val = ((val & 0x00FF00FF) << 8) | ((val & ~0x00FF00FF) >> 8); \
+    (j) = val >> (m);                                             \
   } while (0)
 
 static PLATFORM_INLINE WORD32 ixheaacd_mult32_sat(WORD32 a, WORD32 b) {

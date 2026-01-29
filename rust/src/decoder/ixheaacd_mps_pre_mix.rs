@@ -6,12 +6,6 @@ extern "C" {
         __c: core::ffi::c_int,
         __n: size_t,
     ) -> *mut core::ffi::c_void;
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
     fn ixheaacd_mps_smoothing_opd(self_0: *mut ia_mps_dec_state_struct) -> VOID;
     static ixheaacd_atan_table_Q28: [[[WORD32; 31]; 8]; 16];
     static ixheaacd_ipd_de_quant_table_q28: [WORD32; 16];
@@ -601,12 +595,6 @@ pub struct ia_mps_dec_state_struct {
     pub ec_flag: WORD8,
     pub frame_ok: WORD8,
 }
-pub const __ASSERT_FUNCTION: [core::ffi::c_char; 42] = unsafe {
-    ::core::mem::transmute::<
-        [u8; 42],
-        [core::ffi::c_char; 42],
-    >(*b"WORD32 ixheaacd_mps_phase_wraping(WORD32)\0")
-};
 pub const MAX_PARAMETER_BANDS: core::ffi::c_int = 28 as core::ffi::c_int;
 pub const MAX_M_INPUT: core::ffi::c_int = 2 as core::ffi::c_int;
 pub const MAX_M_OUTPUT: core::ffi::c_int = 2 as core::ffi::c_int;
@@ -623,27 +611,6 @@ unsafe extern "C" fn ixheaacd_mps_phase_wraping(mut phase: WORD32) -> WORD32 {
     while phase >= pi_2 {
         phase -= pi_2;
     }
-    if phase >= 0 as core::ffi::c_int && phase < pi_2 {} else {
-        __assert_fail(
-            b"(phase >= 0) && (phase < pi_2)\0" as *const u8 as *const core::ffi::c_char,
-            b"/mnt/c/Users/bohdan.bolbot/Repositories/libxaac/decoder/ixheaacd_mps_pre_mix.c\0"
-                as *const u8 as *const core::ffi::c_char,
-            68 as core::ffi::c_uint,
-            __ASSERT_FUNCTION.as_ptr(),
-        );
-    }
-    'c_6158: {
-        if phase >= 0 as core::ffi::c_int && phase < pi_2 {} else {
-            __assert_fail(
-                b"(phase >= 0) && (phase < pi_2)\0" as *const u8
-                    as *const core::ffi::c_char,
-                b"/mnt/c/Users/bohdan.bolbot/Repositories/libxaac/decoder/ixheaacd_mps_pre_mix.c\0"
-                    as *const u8 as *const core::ffi::c_char,
-                68 as core::ffi::c_uint,
-                __ASSERT_FUNCTION.as_ptr(),
-            );
-        }
-    };
     return phase;
 }
 unsafe extern "C" fn ixheaacd_mps_buffer_pre_and_mix_matrix(

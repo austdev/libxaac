@@ -1,10 +1,4 @@
 extern "C" {
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
     fn longjmp(__env: *mut __jmp_buf_tag, __val: core::ffi::c_int) -> !;
     fn ixheaacd_aac_showbits_32(
         ptr_read_next: *mut UWORD8,
@@ -90,12 +84,6 @@ pub struct ia_bit_buf_struct {
     pub xaac_jmp_buf: *mut jmp_buf,
 }
 pub const NULL: *mut core::ffi::c_void = 0 as *mut core::ffi::c_void;
-pub const __ASSERT_FUNCTION: [core::ffi::c_char; 57] = unsafe {
-    ::core::mem::transmute::<
-        [u8; 57],
-        [core::ffi::c_char; 57],
-    >(*b"WORD32 ixheaacd_skip_bits_buf(ia_bit_buf_struct *, WORD)\0")
-};
 pub const IA_XHEAAC_DEC_EXE_NONFATAL_INSUFFICIENT_INPUT_BYTES: core::ffi::c_int = 0x1804
     as core::ffi::c_int;
 #[no_mangle]
@@ -134,27 +122,6 @@ pub unsafe extern "C" fn ixheaacd_skip_bits_buf(
         bit_pos += 8 as core::ffi::c_int;
         ptr_read_next = ptr_read_next.offset(1);
     }
-    if bit_pos >= 0 as core::ffi::c_int && bit_pos <= 7 as core::ffi::c_int {} else {
-        __assert_fail(
-            b"bit_pos >= 0 && bit_pos <= 7\0" as *const u8 as *const core::ffi::c_char,
-            b"/mnt/c/Users/bohdan.bolbot/Repositories/libxaac/decoder/ixheaacd_bitbuffer.c\0"
-                as *const u8 as *const core::ffi::c_char,
-            65 as core::ffi::c_uint,
-            __ASSERT_FUNCTION.as_ptr(),
-        );
-    }
-    'c_4316: {
-        if bit_pos >= 0 as core::ffi::c_int && bit_pos <= 7 as core::ffi::c_int {} else {
-            __assert_fail(
-                b"bit_pos >= 0 && bit_pos <= 7\0" as *const u8
-                    as *const core::ffi::c_char,
-                b"/mnt/c/Users/bohdan.bolbot/Repositories/libxaac/decoder/ixheaacd_bitbuffer.c\0"
-                    as *const u8 as *const core::ffi::c_char,
-                65 as core::ffi::c_uint,
-                __ASSERT_FUNCTION.as_ptr(),
-            );
-        }
-    };
     (*it_bit_buff).ptr_read_next = ptr_read_next;
     (*it_bit_buff).bit_pos = bit_pos as WORD16 as WORD32;
     return no_of_bits as WORD32;
