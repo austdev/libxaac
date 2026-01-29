@@ -12,4 +12,7 @@ fn main() {
     #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 
+    // Make the binary find the .dylib at runtime without DYLD_LIBRARY_PATH:
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
 }
