@@ -9,8 +9,6 @@ set(XAAC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(XAAC_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 find_package(Threads REQUIRED)
 
-set(CMAKE_STATIC_LIBRARY_PREFIX "")
-
 include("${XAAC_ROOT}/cmake/utils.cmake")
 
 # Determine Rust build profile based on CMake build type
