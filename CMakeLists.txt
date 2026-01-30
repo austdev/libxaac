@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.26)
 project(libxaac C CXX)
 enable_language(ASM)
 
@@ -45,9 +45,8 @@ endif()
 include("${XAAC_ROOT}/common/common.cmake")
 include("${XAAC_ROOT}/decoder/libxaacdec.cmake")
 include("${XAAC_ROOT}/test/decoder/xaacdec.cmake")
-#include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
+include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
 
 include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
 include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
-#include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
-
+include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
