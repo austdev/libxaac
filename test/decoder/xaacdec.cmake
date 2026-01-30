@@ -1,3 +1,21 @@
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.tools/CMakeFetchContent/" CACHE PATH "")
+include(FetchContent)
+FetchContent_Declare(
+    Corrosion
+    GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+    GIT_TAG v0.6 # Optionally specify a commit hash, version tag or branch here
+)
+set(Rust_TOOLCHAIN "nightly-2025-12-15") # must precede the line below
+FetchContent_MakeAvailable(Corrosion)
+
+#message(FATAL_ERROR "${CMAKE_CURRENT_LIST_DIR}")
+corrosion_import_crate(
+    MANIFEST_PATH   ${CMAKE_CURRENT_LIST_DIR}/../../rust/Cargo.toml
+#    CRATE_TYPES     bin
+    IMPORTED_CRATES some_crates    # logging (optional)
+)
+message(STATUS "Rust crates imported: ${some_crates}")
+
 list(APPEND XAACDEC_SRCS "${XAAC_ROOT}/test/decoder/ixheaacd_error.c"
      "${XAAC_ROOT}/test/decoder/ixheaacd_fileifc.c" "${XAAC_ROOT}/test/decoder/ixheaacd_main.c"
      "${XAAC_ROOT}/test/decoder/ixheaacd_metadata_read.c")
@@ -25,17 +43,14 @@ if(NOT RC_FALLBACK)
 endif()
 
 if(WIN32)
-  set_target_properties(
-    xaacdec
-    PROPERTIES
-      COMPILE_FLAGS
-      "-UARM_PROFILE_HW -UARM_PROFILE_BOARD -DDRC_ENABLE -DMULTICHANNEL_ENABLE -DECLIPSE -DWIN32 -D_CRT_SECURE_NO_WARNINGS -DLOUDNESS_LEVELING_SUPPORT"
-  )
-else()
-  set_target_properties(
-    xaacdec
-    PROPERTIES
-      COMPILE_FLAGS
-      "-UARM_PROFILE_HW -UARM_PROFILE_BOARD -DDRC_ENABLE -DMULTICHANNEL_ENABLE -DECLIPSE -DWIN32 -DLOUDNESS_LEVELING_SUPPORT"
-  )
+    target_compile_definitions(xaacdec PRIVATE
+        _CRT_SECURE_NO_WARNINGS)
 endif()
+
+target_compile_definitions(xaacdec PRIVATE
+    DRC_ENABLE MULTICHANNEL_ENABLE ECLIPSE LOUDNESS_LEVELING_SUPPORT
+    WIN32) # TODO: fix WIN32 diverging from _WIN32
+
+target_compile_options(xaacdec PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/UARM_PROFILE_HW;/UARM_PROFILE_BOARD>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-UARM_PROFILE_HW;-UARM_PROFILE_BOARD>)

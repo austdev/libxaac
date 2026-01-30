@@ -1,0 +1,4 @@
+PyYAML
+colorama
+cmake>4.0
+ninja

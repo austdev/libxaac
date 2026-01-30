@@ -4,3 +4,4 @@ Cargo.lock
 gen_*.rs
 *.srctr*
 *.local.*
+.tools/

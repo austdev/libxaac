@@ -1,0 +1,13 @@
+# all paths are relative to the project root directory
+# rust section can be removed for C++-only project and vice-versa
+
+[cpp]
+path = "."
+compiler = "clang"
+use_ninja = true
+
+#[rust]
+#path = "rust"
+
+#[test]
+#path = "your_test_script.py"
