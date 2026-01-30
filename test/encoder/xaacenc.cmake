@@ -13,17 +13,14 @@ include_directories(${LIBXAACENC_INCLUDES})
 libxaac_add_executable(xaacenc libxaacenc SOURCES ${XAACENC_SRCS} INCLUDES 
                        ${LIBXAACENC_INCLUDES})
 
-if (WIN32) 
-    set_target_properties(
-        xaacenc 
-        PROPERTIES 
-        COMPILE_FLAGS
-        "-D_CRT_SECURE_NO_WARNINGS -D_X86_ -DLOUDNESS_LEVELING_SUPPORT") 
-else()
-    set_target_properties(
-        xaacenc 
-        PROPERTIES 
-        COMPILE_FLAGS
-        "-D_X86_ -c -O3 -Wall -Wsequence-point -Wunused-function -DLOUDNESS_LEVELING_SUPPORT"
-        ) 
+if(WIN32)
+    target_compile_definitions(xaacenc PRIVATE
+       WIN32  _CRT_SECURE_NO_WARNINGS)
 endif()
+
+target_compile_definitions(xaacenc PRIVATE
+    _X86_ LOUDNESS_LEVELING_SUPPORT) 
+
+target_compile_options(xaacenc PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/Wall>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>: -O3;-Wall;-Wsequence-point;-Wunused-function>)
