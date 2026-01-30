@@ -4522,7 +4522,7 @@ pub unsafe extern "C" fn ixheaacd_dec_mem_api(
     }
     if i_cmd == IA_API_CMD_SET_MEM_PTR {
         if pv_value.is_null() {
-            return 0xffff8002 as WORD32;
+            return IA_XHEAAC_DEC_API_FATAL_MEM_ALLOC as WORD32;
         }
         if (pv_value as size_t)
             .wrapping_rem(
@@ -4530,7 +4530,7 @@ pub unsafe extern "C" fn ixheaacd_dec_mem_api(
                     .ui_alignment as size_t,
             ) != 0 as size_t
         {
-            return 0xffff8006 as WORD32;
+            return IA_XHEAAC_DEC_API_FATAL_MEM_ALIGN as WORD32;
         }
         let ref mut fresh0 = *((*p_obj_exhaacplus_dec).pp_mem_aac)
             .offset(i_idx as isize);
@@ -4879,10 +4879,10 @@ pub unsafe extern "C" fn ixheaacd_dec_api(
     let mut pf_value: *mut core::ffi::c_float = pv_value as *mut core::ffi::c_float;
     if i_cmd != IA_API_CMD_GET_API_SIZE && i_cmd != IA_API_CMD_GET_LIB_ID_STRINGS {
         if p_ia_xheaac_dec_obj.is_null() {
-            return 0xffff8002 as IA_ERRORCODE;
+            return IA_XHEAAC_DEC_API_FATAL_MEM_ALLOC as IA_ERRORCODE;
         }
         if p_ia_xheaac_dec_obj as size_t & 3 as size_t != 0 as size_t {
-            return 0xffff8006 as IA_ERRORCODE;
+            return IA_XHEAAC_DEC_API_FATAL_MEM_ALIGN as IA_ERRORCODE;
         }
     }
     match i_cmd {
@@ -5092,7 +5092,7 @@ pub unsafe extern "C" fn ixheaacd_dec_api(
                     if *pui_value < 8000 as core::ffi::c_uint
                         || *pui_value > 96000 as core::ffi::c_uint
                     {
-                        return 0xffff8800 as IA_ERRORCODE;
+                        return IA_XHEAAC_DEC_CONFIG_FATAL_INVALID_SAMPLE_RATE as IA_ERRORCODE;
                     }
                     (*p_obj_exhaacplus_dec).aac_config.ui_samp_freq = *pui_value
                         as UWORD32;
@@ -8012,7 +8012,7 @@ pub unsafe extern "C" fn ixheaacd_dec_table_api(
     ui_get_vals[4 as core::ffi::c_int as usize] = *table_ptrs[i_idx as usize] as size_t;
     if i_cmd == IA_API_CMD_SET_TABLE_PTR {
         if pv_value.is_null() {
-            return 0xffff8002 as WORD32;
+            return IA_XHEAAC_DEC_API_FATAL_MEM_ALLOC as WORD32;
         }
         if pv_value as size_t & 3 as size_t != 0 {
             return IA_XHEAAC_DEC_API_FATAL_MEM_ALIGN as WORD32;

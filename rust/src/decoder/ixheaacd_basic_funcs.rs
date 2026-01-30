@@ -355,7 +355,7 @@ pub const ONE_IN_Q30: core::ffi::c_int = 0x40000000 as core::ffi::c_int;
 #[inline]
 unsafe extern "C" fn ixheaacd_one_by_sqrt_calc(mut op: WORD32) -> WORD32 {
     let mut a: WORD32 = ixheaac_add32_sat(
-        0x900ebee0 as WORD32,
+        0x900ebee0u32 as i32 as WORD32,
         ixheaac_mult32x16in32_shl_sat(op, 0x39d9 as WORD16),
     );
     let mut iy: WORD32 = ixheaac_add32_sat(
