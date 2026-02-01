@@ -16,6 +16,8 @@ fn main() {
     let  ixheaacd_headers = vec!(
         "ixheaacd_vec_baisc_ops.h",
         "ixheaacd_windows.h",
+        "ixheaacd_td_mdct.h",
+        "ixheaacd_mps_dec.h",
     );
 
     let bindings = bindgen::Builder::default()
