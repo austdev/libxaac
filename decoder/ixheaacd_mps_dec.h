@@ -22,6 +22,16 @@
 
 #include "stddef.h"
 
+#include "ixheaacd_config.h"
+#include "ixheaacd_sbr_rom.h"
+#include "ixheaacd_sbr_scale.h"
+#include "ixheaacd_mps_polyphase.h"
+#include "ixheaacd_mps_struct_def.h"
+#include "ixheaacd_mps_aac_struct.h"
+#include "ixheaacd_mps_res_rom.h"
+#include "ixheaacd_qmf_dec.h"
+#include "ixheaac_constants.h"
+
 #define ABS_THR (1e-9f * 32768 * 32768)
 
 #define MAX_NUM_QMF_BANDS_MPS (128)
