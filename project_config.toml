@@ -3,8 +3,12 @@
 
 [cpp]
 path = "."
+# compiler can be set to: gcc, clang, msvc, clang-cl
 compiler = "clang"
 use_ninja = true
+shared_libs = false
+# targets per the first argument of add_library or add_executable
+targets = [ "all" ]
 
 #[rust]
 #path = "rust"
