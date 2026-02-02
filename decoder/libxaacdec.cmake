@@ -137,7 +137,7 @@ else()
 endif()
 
 add_library(libxaacdec ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
-if(WIN32)
+if(MSVC)
     set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "libxaacdec")
 else()
     set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
