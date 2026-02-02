@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 project(libxaac C CXX)
 enable_language(ASM)
 
-option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." OFF)
+option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." ON)
 
 # Unify output layout for all generators
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
