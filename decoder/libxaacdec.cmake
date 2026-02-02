@@ -137,11 +137,7 @@ else()
 endif()
 
 add_library(libxaacdec ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
-if(MSVC)
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "libxaacdec")
-else()
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
-endif()
+set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
 
 if(RC_FALLBACK)
     get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)
