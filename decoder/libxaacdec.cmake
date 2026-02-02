@@ -136,8 +136,8 @@ else()
   include("${XAAC_ROOT}/decoder/x86/libxaacdec_x86.cmake")
 endif()
 
-add_library(libxaacdec SHARED ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
-set_target_properties(libxaacdec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+add_library(libxaacdec STATIC ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+set_target_properties(libxaacdec PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON POSITION_INDEPENDENT_CODE TRUE)
 
 if(RC_FALLBACK)
     set_target_properties(libxaacdec PROPERTIES 

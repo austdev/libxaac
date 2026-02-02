@@ -4,7 +4,7 @@ use std::path::PathBuf;
 fn main() {
     if cfg!(feature = "fallback") {
         println!("cargo:rustc-link-search=native=build");
-        println!("cargo:rustc-link-lib=static=libxaacdec-ref");
+        println!("cargo:rustc-link-lib=static=xaacdec-ref");
     }
     //println!("cargo:rerun-if-changed=ixheaacd_vec_baisc_ops.h");
     let  compiler_options = vec!(
