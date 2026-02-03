@@ -154,6 +154,7 @@ else()
         DEPENDS
             "${XAAC_ROOT}/decoder/Cargo.toml"
             "${XAAC_ROOT}/decoder/src/lib.rs"
+            "${XAAC_ROOT}/decoder/src/ixheaacd.rs"
     )
     add_custom_target(rust_decoder_build ALL
         DEPENDS ${RUST_DECODER_LIB}
