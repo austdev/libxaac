@@ -136,12 +136,8 @@ else()
   include("${XAAC_ROOT}/decoder/x86/libxaacdec_x86.cmake")
 endif()
 
-add_library(libxaacdec STATIC ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
-if(WIN32)
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "libxaacdec")
-else()
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
-endif()
+add_library(libxaacdec ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
 
 if(RC_FALLBACK)
     get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)
@@ -155,9 +151,10 @@ else()
         COMMAND ${CARGO_CMD}
         OUTPUT ${RUST_DECODER_LIB}
         WORKING_DIRECTORY "${XAAC_ROOT}/decoder"
-        DEPENDS 
+        DEPENDS
             "${XAAC_ROOT}/decoder/Cargo.toml"
             "${XAAC_ROOT}/decoder/src/lib.rs"
+            "${XAAC_ROOT}/decoder/src/ixheaacd.rs"
     )
     add_custom_target(rust_decoder_build ALL
         DEPENDS ${RUST_DECODER_LIB}
@@ -168,4 +165,3 @@ else()
         IMPORTED_LOCATION ${RUST_DECODER_LIB}
     )
 endif()
- 

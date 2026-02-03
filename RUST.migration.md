@@ -22,7 +22,7 @@
 
 #### 2. C Build Tools
 
-- **CMake** 3.10 or higher
+- **CMake** 3.26 or higher
 - **C compiler**: Clang or MSVC
 - **Cross-compilation toolchains** (for ARM targets, optional)
 
@@ -349,7 +349,7 @@ mod integration_test {
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja  -DCMAKE_BUILD_TYPE=Debug
+cmake --fresh -B build -G Ninja -DRC_FALLBACK=OFF -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -t xaacdec
 
 # Output: build/xaacdec
@@ -491,7 +491,7 @@ cmake --build build -t xaacdec xaacenc
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja # -DCMAKE_BUILD_TYPE=Debug
+cmake --fresh -B build -G Ninja -DRC_FALLBACK=OFF # -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -t xaacdec
 ```
 

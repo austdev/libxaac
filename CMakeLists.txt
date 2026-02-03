@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.26)
 project(libxaac C CXX)
 enable_language(ASM)
 
-option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." OFF)
+option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." ON)
 
 # Unify output layout for all generators
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -42,12 +42,17 @@ if(NOT COMPILER_HAS_SANITIZER)
   libxaac_set_link_libraries()
 endif()
 
+option(BUILD_FUZZER "Build fuzzer for encoder and decoder" OFF)
+
 include("${XAAC_ROOT}/common/common.cmake")
 include("${XAAC_ROOT}/decoder/libxaacdec.cmake")
 include("${XAAC_ROOT}/test/decoder/xaacdec.cmake")
-#include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
+if (BUILD_FUZZER)
+    include("${XAAC_ROOT}/fuzzer/xaac_dec_fuzzer.cmake")
+endif()
 
 include("${XAAC_ROOT}/encoder/libxaacenc.cmake")
 include("${XAAC_ROOT}/test/encoder/xaacenc.cmake")
-#include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
-
+if (BUILD_FUZZER)
+    include("${XAAC_ROOT}/fuzzer/xaac_enc_fuzzer.cmake")
+endif()

@@ -5,6 +5,7 @@
         "ms-vscode.cpptools",
         "fill-labs.dependi",
         "tamasfe.even-better-toml",
-        "rust-lang.rust-analyzer"
+        "rust-lang.rust-analyzer",
+        "bierner.markdown-preview-github-styles"
     ]
 }
