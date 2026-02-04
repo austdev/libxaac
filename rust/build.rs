@@ -15,4 +15,9 @@ fn main() {
     // Make the binary find the .dylib at runtime without DYLD_LIBRARY_PATH:
     #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
+
+    // Link definitions of `printf` and other legacy functions that are not in the msvcrt
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-lib=legacy_stdio_definitions");
+
 }

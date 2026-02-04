@@ -61,6 +61,7 @@ extern "C" {
     fn malloc(__size: size_t) -> *mut core::ffi::c_void;
     fn free(__ptr: *mut core::ffi::c_void);
     fn exit(__status: core::ffi::c_int) -> !;
+    #[cfg(not(target_env = "msvc"))]
     static mut stderr: *mut FILE;
     fn fclose(__stream: *mut FILE) -> core::ffi::c_int;
     fn fflush(__stream: *mut FILE) -> core::ffi::c_int;
@@ -4265,6 +4266,8 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             break;
         }
     }
+    // TODO: get stderr on msvc
+    #[cfg(not(target_env = "msvc"))]
     fprintf(
         stderr,
         b"TOTAL FRAMES : [%5d] \n\0" as *const u8 as *const core::ffi::c_char,
