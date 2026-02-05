@@ -10,8 +10,8 @@ shared_libs = false
 # targets per the first argument of add_library or add_executable
 targets = [ "libxaacdec" ]
 
-#[rust]
-#path = "rust"
+[rust]
+path = "rust"
 
 #[test]
 #path = "your_test_script.py"
