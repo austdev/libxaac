@@ -13,5 +13,8 @@ targets = [ "libxaacdec" ]
 [rust]
 path = "rust"
 
+[migration]
+legacy_build = true
+
 #[test]
 #path = "your_test_script.py"
