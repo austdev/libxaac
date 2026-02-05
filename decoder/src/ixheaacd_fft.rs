@@ -28,7 +28,8 @@ impl FftMode {
 trait FixedPointOps {
     /// Q31 fixed-point multiply: ((a * b) >> 32) << 1
     fn mult_shl(self, other: Self) -> Self;
-
+    /// Q31 fixed-point multiply with saturation: sat32((a * b) >> 31)
+    fn mult32_sat(self, other: u32) -> Self;
 }
 
 impl FixedPointOps for i32 {
@@ -37,10 +38,124 @@ impl FixedPointOps for i32 {
         (((self as i64 * other as i64) >> 32) as i32) << 1
     }
 
+    #[inline]
+    fn mult32_sat(self, other: u32) -> Self {
+        ((self as i64 * (other as i32) as i64) >> 31).clamp(i32::MIN as i64, i32::MAX as i64) as i32
+    }
+}
+
+/// Count leading zeros normalization (ixheaac_norm32)
+#[inline]
+fn norm32(a: i32) -> i32 {
+    if a == 0 || a == -1 { return 31; }
+    (if a < 0 { !a } else { a }).leading_zeros() as i32 - 1
+}
+
+/// Bit-reversal permutation index (DIG_REV macro)
+#[inline]
+fn dig_rev(i: usize, m: u32) -> usize {
+    let mut v = i as u32;
+    v = ((v & 0x33333333) << 2) | ((v & !0x33333333) >> 2);
+    v = ((v & 0x0F0F0F0F) << 4) | ((v & !0x0F0F0F0F) >> 4);
+    v = ((v & 0x00FF00FF) << 8) | ((v & !0x00FF00FF) >> 8);
+    (v >> m) as usize
+}
+
+/// Radix-4 butterfly with configurable cross-term signs
+fn radix4_butterfly(
+    mut x0r: i32, mut x0i: i32, // DC component
+    mut x1r: i32, mut x1i: i32, // Quarter-turn component
+    mut x2r: i32, mut x2i: i32, // Half-turn component
+    mut x3r: i32, mut x3i: i32, // Three-quarter component
+    alt_x1x3: bool,             // Alternate x1/x3 signs (4th twiddle range)
+    forward: bool,              // Forward FFT direction
+) -> [i32; 8] {
+    x0r = x0r.saturating_add(x2r);
+    x0i = x0i.saturating_add(x2i);
+    x2r = x0r.saturating_sub(x2r.saturating_mul(2));
+    x2i = x0i.saturating_sub(x2i.saturating_mul(2));
+
+    if alt_x1x3 {
+        x1r = x1r.saturating_add(x3r);
+        x1i = x1i.saturating_sub(x3i);
+        x3r = x1r.saturating_sub(x3r.saturating_mul(2));
+        x3i = x1i.saturating_add(x3i.saturating_mul(2));
+    } else {
+        x1r = x1r.saturating_add(x3r);
+        x1i = x1i.saturating_add(x3i);
+        x3r = x1r.saturating_sub(x3r.saturating_mul(2));
+        x3i = x1i.saturating_sub(x3i.saturating_mul(2));
+    }
+
+    x0r = x0r.saturating_add(x1r);
+    x0i = x0i.saturating_add(x1i);
+    x1r = x0r.saturating_sub(x1r.saturating_mul(2));
+    x1i = x0i.saturating_sub(x1i.saturating_mul(2));
+
+    if forward {
+        x2r = x2r.saturating_add(x3i);
+        x2i = x2i.saturating_sub(x3r);
+        x3i = x2r.saturating_sub(x3i.saturating_mul(2));
+        x3r = x2i.saturating_add(x3r.saturating_mul(2));
+    } else {
+        x2r = x2r.saturating_sub(x3i);
+        x2i = x2i.saturating_add(x3r);
+        x3i = x2r.saturating_add(x3i.saturating_mul(2));
+        x3r = x2i.saturating_sub(x3r.saturating_mul(2));
+    }
+
+    [x0r, x0i, x2r, x2i, x1r, x1i, x3i, x3r]
+}
+
+// Twiddle multiplication types for different angle quadrants.
+// Forward: standard complex multiply  (r*cos - i*sin, r*sin + i*cos)
+// Inverse: conjugate complex multiply (r*cos + i*sin, i*cos - r*sin)
+// Types C-F handle quadrant wrapping when twiddle indices exceed table bounds.
+
+/// Type A: standard complex multiply (forward x1/x2/x3 range 1)
+#[inline]
+fn tw_fwd(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (r.mult32_sat(wl).saturating_sub(i.mult32_sat(wh)),
+     r.mult32_sat(wh).saturating_add(i.mult32_sat(wl)))
+}
+
+/// Type B: conjugate complex multiply (inverse x1/x2/x3 range 1)
+#[inline]
+fn tw_inv(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (r.mult32_sat(wl).saturating_add(i.mult32_sat(wh)),
+     r.mult32_sat(wh).wrapping_neg().saturating_add(i.mult32_sat(wl)))
+}
+
+/// Type C: quadrant-wrapped (forward x3 ranges 2-3, x2 ranges 3-4)
+#[inline]
+fn tw_fwd_wrap(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (r.mult32_sat(wh).saturating_add(i.mult32_sat(wl)),
+     i.mult32_sat(wh).saturating_sub(r.mult32_sat(wl)))
+}
+
+/// Type D: quadrant-wrapped conjugate (inverse x3 ranges 2-3, x2 ranges 3-4)
+#[inline]
+fn tw_inv_wrap(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (r.mult32_sat(wh).saturating_sub(i.mult32_sat(wl)),
+     r.mult32_sat(wl).saturating_add(i.mult32_sat(wh)))
+}
+
+/// Type E: double-wrapped (forward x3 range 4)
+#[inline]
+fn tw_fwd_wrap2(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (i.mult32_sat(wh).saturating_sub(r.mult32_sat(wl)),
+     r.mult32_sat(wh).saturating_add(i.mult32_sat(wl)))
+}
+
+/// Type F: double-wrapped conjugate (inverse x3 range 4)
+#[inline]
+fn tw_inv_wrap2(r: i32, i: i32, wh: u32, wl: u32) -> (i32, i32) {
+    (r.mult32_sat(wl).saturating_add(i.mult32_sat(wh)).wrapping_neg(),
+     r.mult32_sat(wh).wrapping_neg().saturating_add(i.mult32_sat(wl)))
 }
 
 /// Valid mixed-radix FFT lengths (3^k * 2^m)
-const MIXED_RADIX_LENGTHS: [usize; 5] = [48, 96, 192, 384, 768];
+const MIXED_RADIX_LENGTHS: [usize; 4] = [48, 96, 192, 384];
 
 /// Specialized 32-point FFT for MPEG Surround (MPS) synthesis filter bank.
 ///
@@ -128,15 +243,14 @@ pub fn complex_fft_p2(
     preshift: i32,         // Initial scaling factor
 ) -> i32  // Updated preshift value after transform.
 {
-    assert_eq!(xr.len(), xi.len(), "Real and imaginary arrays must have equal length");
     let nlength = xr.len();
     assert!(nlength <= 512, "Power-of-2 FFT supports lengths up to 512");
     assert!(nlength.is_power_of_two(), "Power-of-2 FFT requires power-of-2 length");
-
-    let mut preshift_out = preshift;
+    assert_eq!(xr.len(), xi.len(), "Real and imaginary arrays must have equal length");
 
     #[cfg(feature = "fallback")]
     unsafe {
+        let mut preshift_out = preshift;
         crate::gen_ixheaacd_ref::ixheaacd_complex_fft_p2_dec(
             xr.as_mut_ptr(),
             xi.as_mut_ptr(),
@@ -144,15 +258,299 @@ pub fn complex_fft_p2(
             fft_mode.sign(),
             &mut preshift_out,
         );
+        return preshift_out;
     }
 
-    #[cfg(not(feature = "fallback"))]
+    use crate::ixheaacd::rom::TWIDDLE_TABLE_FFT_32X32;
+
+    let npoints = nlength;
+    let forward = fft_mode == FftMode::Forward;
+    let dig_rev_shift = (norm32(npoints as i32) + 1 - 16) as u32;
+    let mut n_stages = 30 - norm32(npoints as i32);
+    let not_power_4 = (n_stages & 1) != 0;
+    n_stages >>= 1;
+
+    // Compute bit-count n and shift
+    let mut n = 0u32;
+    let mut npts = npoints;
+    while npts >> 1 != 0 {
+        n += 1;
+        npts >>= 1;
+    }
+    let mut shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 3) / 2 } as i32;
+
+    // Scale input into interleaved working buffer
+    let mut ptr_x = [0i32; 1024];
+    let scale = 1i32 << shift;
+    for i in 0..nlength {
+        ptr_x[2 * i] = xr[i] / scale;
+        ptr_x[2 * i + 1] = xi[i] / scale;
+    }
+
+    let mut y = [0i32; 1024];
+
+    // Initial radix-4 pass with bit-reversal
     {
-        let _ = (xr, xi, nlength, fft_mode);
-        todo!("Pure Rust implementation pending")
+        let mut yi = 0usize;
+        for i in (0..npoints).step_by(4) {
+            let mut h2 = dig_rev(i, dig_rev_shift);
+            if not_power_4 {
+                h2 = (h2 + 1) & !1;
+            }
+            let half = npoints >> 1;
+            let x0r = ptr_x[h2];
+            let x0i = ptr_x[h2 + 1];
+            let x1r = ptr_x[h2 + half];
+            let x1i = ptr_x[h2 + half + 1];
+            let x2r = ptr_x[h2 + 2 * half];
+            let x2i = ptr_x[h2 + 2 * half + 1];
+            let x3r = ptr_x[h2 + 3 * half];
+            let x3i = ptr_x[h2 + 3 * half + 1];
+
+            let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+            y[yi..yi + 8].copy_from_slice(&bfly);
+            yi += 8;
+        }
     }
 
-    preshift_out
+    // Main radix-4 stages
+    let mut del: usize = 4;
+    let mut nodespacing: usize = 64;
+    let mut in_loop_cnt = npoints >> 4;
+    let twiddles = &TWIDDLE_TABLE_FFT_32X32;
+    let tw_apply: fn(i32, i32, u32, u32) -> (i32, i32) = if forward { tw_fwd } else { tw_inv };
+    let tw_apply_wrap: fn(i32, i32, u32, u32) -> (i32, i32) = if forward { tw_fwd_wrap } else { tw_inv_wrap };
+    let tw_apply_wrap2: fn(i32, i32, u32, u32) -> (i32, i32) = if forward { tw_fwd_wrap2 } else { tw_inv_wrap2 };
+
+    for _stage in (1..n_stages as usize).rev() {
+        // Range 0: no twiddles (j=0)
+        {
+            let mut base = 0usize;
+            for _k in 0..in_loop_cnt {
+                let stride = del << 1;
+                let x0r = y[base];
+                let x0i = y[base + 1];
+                let x1r = y[base + stride];
+                let x1i = y[base + stride + 1];
+                let x2r = y[base + 2 * stride];
+                let x2i = y[base + 2 * stride + 1];
+                let x3r = y[base + 3 * stride];
+                let x3i = y[base + 3 * stride + 1];
+
+                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                y[base] = bfly[0];
+                y[base + 1] = bfly[1];
+                y[base + stride] = bfly[2];
+                y[base + stride + 1] = bfly[3];
+                y[base + 2 * stride] = bfly[4];
+                y[base + 2 * stride + 1] = bfly[5];
+                y[base + 3 * stride] = bfly[6];
+                y[base + 3 * stride + 1] = bfly[7];
+                base += 4 * stride;
+            }
+        }
+
+        let sec_loop_cnt = {
+            let v = (nodespacing * del) as i32;
+            (v / 4) + (v / 8) - (v / 16) + (v / 32) - (v / 64) + (v / 128) - (v / 256)
+        } as usize;
+
+        // Range 1: standard twiddles
+        let mut col = 1usize; // column offset in interleaved y
+        let mut j = nodespacing;
+        while j <= sec_loop_cnt {
+            let w1h = twiddles[2 * j];
+            let w1l = twiddles[2 * j + 1];
+            let w2h = twiddles[2 * (j << 1)];
+            let w2l = twiddles[2 * (j << 1) + 1];
+            let w3h = twiddles[2 * j + 2 * (j << 1)];
+            let w3l = twiddles[2 * j + 2 * (j << 1) + 1];
+
+            let mut base = col * 2;
+            for _k in 0..in_loop_cnt {
+                let stride = del << 1;
+                let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
+                let (x2r, x2i) = tw_apply(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
+                let (x3r, x3i) = tw_apply(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
+                let x0r = y[base];
+                let x0i = y[base + 1];
+
+                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                y[base] = bfly[0];
+                y[base + 1] = bfly[1];
+                y[base + stride] = bfly[2];
+                y[base + stride + 1] = bfly[3];
+                y[base + 2 * stride] = bfly[4];
+                y[base + 2 * stride + 1] = bfly[5];
+                y[base + 3 * stride] = bfly[6];
+                y[base + 3 * stride + 1] = bfly[7];
+                base += 4 * stride;
+            }
+            col += 1;
+            j += nodespacing;
+        }
+
+        // Range 2: x3 wrapped
+        while j <= (nodespacing * del) >> 1 {
+            let w1h = twiddles[2 * j];
+            let w1l = twiddles[2 * j + 1];
+            let w2h = twiddles[2 * (j << 1)];
+            let w2l = twiddles[2 * (j << 1) + 1];
+            let w3h = twiddles[2 * j + 2 * (j << 1) - 512];
+            let w3l = twiddles[2 * j + 2 * (j << 1) - 511];
+
+            let mut base = col * 2;
+            for _k in 0..in_loop_cnt {
+                let stride = del << 1;
+                let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
+                let (x2r, x2i) = tw_apply(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
+                let (x3r, x3i) = tw_apply_wrap(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
+                let x0r = y[base];
+                let x0i = y[base + 1];
+
+                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                y[base] = bfly[0];
+                y[base + 1] = bfly[1];
+                y[base + stride] = bfly[2];
+                y[base + stride + 1] = bfly[3];
+                y[base + 2 * stride] = bfly[4];
+                y[base + 2 * stride + 1] = bfly[5];
+                y[base + 3 * stride] = bfly[6];
+                y[base + 3 * stride + 1] = bfly[7];
+                base += 4 * stride;
+            }
+            col += 1;
+            j += nodespacing;
+        }
+
+        // Range 3: x2 + x3 wrapped
+        while j <= sec_loop_cnt * 2 {
+            let w1h = twiddles[2 * j];
+            let w1l = twiddles[2 * j + 1];
+            let w2h = twiddles[2 * (j << 1) - 512];
+            let w2l = twiddles[2 * (j << 1) - 511];
+            let w3h = twiddles[2 * j + 2 * (j << 1) - 512];
+            let w3l = twiddles[2 * j + 2 * (j << 1) - 511];
+
+            let mut base = col * 2;
+            for _k in 0..in_loop_cnt {
+                let stride = del << 1;
+                let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
+                let (x2r, x2i) = tw_apply_wrap(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
+                let (x3r, x3i) = tw_apply_wrap(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
+                let x0r = y[base];
+                let x0i = y[base + 1];
+
+                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                y[base] = bfly[0];
+                y[base + 1] = bfly[1];
+                y[base + stride] = bfly[2];
+                y[base + stride + 1] = bfly[3];
+                y[base + 2 * stride] = bfly[4];
+                y[base + 2 * stride + 1] = bfly[5];
+                y[base + 3 * stride] = bfly[6];
+                y[base + 3 * stride + 1] = bfly[7];
+                base += 4 * stride;
+            }
+            col += 1;
+            j += nodespacing;
+        }
+
+        // Range 4: x2 wrapped, x3 double-wrapped, alt butterfly
+        while j < nodespacing * del {
+            let w1h = twiddles[2 * j];
+            let w1l = twiddles[2 * j + 1];
+            let w2h = twiddles[2 * (j << 1) - 512];
+            let w2l = twiddles[2 * (j << 1) - 511];
+            let w3h = twiddles[2 * j + 2 * (j << 1) - 1024];
+            let w3l = twiddles[2 * j + 2 * (j << 1) - 1023];
+
+            let mut base = col * 2;
+            for _k in 0..in_loop_cnt {
+                let stride = del << 1;
+                let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
+                let (x2r, x2i) = tw_apply_wrap(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
+                let (x3r, x3i) = tw_apply_wrap2(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
+                let x0r = y[base];
+                let x0i = y[base + 1];
+
+                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, true, forward);
+                y[base] = bfly[0];
+                y[base + 1] = bfly[1];
+                y[base + stride] = bfly[2];
+                y[base + stride + 1] = bfly[3];
+                y[base + 2 * stride] = bfly[4];
+                y[base + 2 * stride + 1] = bfly[5];
+                y[base + 3 * stride] = bfly[6];
+                y[base + 3 * stride + 1] = bfly[7];
+                base += 4 * stride;
+            }
+            col += 1;
+            j += nodespacing;
+        }
+
+        nodespacing >>= 2;
+        del <<= 2;
+        in_loop_cnt >>= 2;
+    }
+
+    // Optional radix-2 final stage
+    if not_power_4 {
+        let nodespacing2 = nodespacing << 1;
+        shift += 1;
+        let stride = del << 1;
+
+        // First half
+        let mut yi = 0usize;
+        let mut tw_idx = 0usize;
+        for _j in 0..del / 2 {
+            let w1h = twiddles[tw_idx];
+            let w1l = twiddles[tw_idx + 1];
+            tw_idx += nodespacing2 * 2;
+
+            let x0r = y[yi];
+            let x0i = y[yi + 1];
+            let x1r = y[yi + stride];
+            let x1i = y[yi + stride + 1];
+
+            let (t1r, t1i) = tw_apply(x1r, x1i, w1h, w1l);
+
+            y[yi + stride] = x0r / 2 - t1r / 2;
+            y[yi + stride + 1] = x0i / 2 - t1i / 2;
+            y[yi] = x0r / 2 + t1r / 2;
+            y[yi + 1] = x0i / 2 + t1i / 2;
+            yi += 2;
+        }
+
+        // Second half
+        let mut tw_idx = 0usize;
+        for _j in 0..del / 2 {
+            let w1h = twiddles[tw_idx];
+            let w1l = twiddles[tw_idx + 1];
+            tw_idx += nodespacing2 * 2;
+
+            let x0r = y[yi];
+            let x0i = y[yi + 1];
+            let x1r = y[yi + stride];
+            let x1i = y[yi + stride + 1];
+
+            let (t1r, t1i) = tw_apply_wrap(x1r, x1i, w1h, w1l);
+
+            y[yi + stride] = x0r / 2 - t1r / 2;
+            y[yi + stride + 1] = x0i / 2 - t1i / 2;
+            y[yi] = x0r / 2 + t1r / 2;
+            y[yi + 1] = x0i / 2 + t1i / 2;
+            yi += 2;
+        }
+    }
+
+    // Deinterleave output
+    for i in 0..nlength {
+        xr[i] = y[2 * i];
+        xi[i] = y[2 * i + 1];
+    }
+
+    shift - preshift
 }
 
 /// Radix-3 DFT butterfly for mixed-radix FFT.
@@ -205,7 +603,7 @@ pub fn complex_3point_fft(
 
 /// Mixed-radix FFT for lengths that are products of powers of 2 and 3.
 ///
-/// Supports lengths like 48, 96, 192, 384, 768 (3^k * 2^m).
+/// Supports lengths like 48, 96, 192, 384 (3^k * 2^m).
 ///
 /// # C signature
 /// ```c
@@ -219,7 +617,6 @@ pub fn complex_fft_p3(
     preshift: i32,         // Initial scaling factor
 ) -> i32  // Updated preshift value after transform.
 {
-    assert_eq!(xr.len(), xi.len(), "Real and imaginary arrays must have equal length");
     let nlength = xr.len();
     assert!(
         MIXED_RADIX_LENGTHS.contains(&nlength),
@@ -227,11 +624,11 @@ pub fn complex_fft_p3(
         MIXED_RADIX_LENGTHS,
         nlength
     );
-
-    let mut preshift_out = preshift;
+    assert_eq!(xr.len(), xi.len(), "Real and imaginary arrays must have equal length");
 
     #[cfg(feature = "fallback")]
     unsafe {
+        let mut preshift_out = preshift;
         crate::gen_ixheaacd_ref::ixheaacd_complex_fft_p3(
             xr.as_mut_ptr(),
             xi.as_mut_ptr(),
@@ -239,15 +636,108 @@ pub fn complex_fft_p3(
             fft_mode.sign(),
             &mut preshift_out,
         );
+        return preshift_out;
     }
 
-    #[cfg(not(feature = "fallback"))]
-    {
-        let _ = (xr, xi, nlength, fft_mode);
-        todo!("Pure Rust implementation pending")
+    use crate::ixheaacd::rom::{TWIDDLE_TABLE_3PI, TWIDDLE_TABLE_3PR};
+
+    let mut mpass = nlength;
+    let mut cnfac = 0usize;
+    while mpass % 3 == 0 {
+        mpass /= 3;
+        cnfac += 1;
     }
 
-    preshift_out
+    // Run power-of-2 sub-FFTs on strided sub-sequences
+    let mut xr_3 = [0i32; 384];
+    let mut xi_3 = [0i32; 384];
+    for i in 0..3 * cnfac {
+        for j in 0..mpass {
+            xr_3[j] = xr[3 * j + i];
+            xi_3[j] = xi[3 * j + i];
+        }
+        complex_fft_p2(&mut xr_3[..mpass], &mut xi_3[..mpass], fft_mode, 0);
+        for j in 0..mpass {
+            xr[3 * j + i] = xr_3[j];
+            xi[3 * j + i] = xi_3[j];
+        }
+    }
+
+    // Compute shift from mpass (matching C behavior)
+    let mut n = 0u32;
+    let mut npts = mpass;
+    while npts >> 1 != 0 {
+        n += 1;
+        npts >>= 1;
+    }
+    let shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 5) / 2 } as i32;
+
+    // Scale and interleave into working buffer
+    let mut ptr_x = vec![0i32; 768];
+    for i in 0..nlength {
+        ptr_x[2 * i] = xr[i] >> 1;
+        ptr_x[2 * i + 1] = xi[i] >> 1;
+    }
+
+    // Apply twiddle factors from 3PR/3PI tables
+    let tw_step = 3 * (128 / mpass - 1) + 1;
+    if fft_mode == FftMode::Forward {
+        let mut tw_pos = 0usize;
+        for i in (0..nlength).step_by(3) {
+            tw_pos += 1;
+            let (w1r, w1i) = (TWIDDLE_TABLE_3PR[tw_pos], TWIDDLE_TABLE_3PI[tw_pos]);
+            let r = ptr_x[2 * i + 2];
+            let im = ptr_x[2 * i + 3];
+            ptr_x[2 * i + 2] = r.mult32_sat(w1r).saturating_sub(im.mult32_sat(w1i));
+            ptr_x[2 * i + 3] = r.mult32_sat(w1i).saturating_add(im.mult32_sat(w1r));
+
+            tw_pos += 1;
+            let (w2r, w2i) = (TWIDDLE_TABLE_3PR[tw_pos], TWIDDLE_TABLE_3PI[tw_pos]);
+            let r = ptr_x[2 * i + 4];
+            let im = ptr_x[2 * i + 5];
+            ptr_x[2 * i + 4] = r.mult32_sat(w2r).saturating_sub(im.mult32_sat(w2i));
+            ptr_x[2 * i + 5] = r.mult32_sat(w2i).saturating_add(im.mult32_sat(w2r));
+
+            tw_pos += tw_step;
+        }
+    } else {
+        let mut tw_pos = 0usize;
+        for i in (0..nlength).step_by(3) {
+            tw_pos += 1;
+            let (w1r, w1i) = (TWIDDLE_TABLE_3PR[tw_pos], TWIDDLE_TABLE_3PI[tw_pos]);
+            let r = ptr_x[2 * i + 2];
+            let im = ptr_x[2 * i + 3];
+            ptr_x[2 * i + 2] = r.mult32_sat(w1r).saturating_add(im.mult32_sat(w1i));
+            ptr_x[2 * i + 3] = im.mult32_sat(w1r).saturating_sub(r.mult32_sat(w1i));
+
+            tw_pos += 1;
+            let (w2r, w2i) = (TWIDDLE_TABLE_3PR[tw_pos], TWIDDLE_TABLE_3PI[tw_pos]);
+            let r = ptr_x[2 * i + 4];
+            let im = ptr_x[2 * i + 5];
+            ptr_x[2 * i + 4] = r.mult32_sat(w2r).saturating_add(im.mult32_sat(w2i));
+            ptr_x[2 * i + 5] = im.mult32_sat(w2r).saturating_sub(r.mult32_sat(w2i));
+
+            tw_pos += tw_step;
+        }
+    }
+
+    // Run 3-point FFTs
+    let mut y = [0i32; 768];
+    for i in 0..mpass {
+        complex_3point_fft(&ptr_x[6 * i..6 * i + 6], &mut y[6 * i..6 * i + 6], fft_mode);
+    }
+
+    // Reorder output
+    for i in 0..mpass {
+        xr[i] = y[6 * i];
+        xi[i] = y[6 * i + 1];
+        xr[mpass + i] = y[6 * i + 2];
+        xi[mpass + i] = y[6 * i + 3];
+        xr[2 * mpass + i] = y[6 * i + 4];
+        xi[2 * mpass + i] = y[6 * i + 5];
+    }
+
+    shift - preshift + 1
 }
 
 /// Main FFT dispatcher that routes to the appropriate implementation.
