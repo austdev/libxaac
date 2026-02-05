@@ -96,7 +96,7 @@ The migration follows a **5-phase iterative cycle** for each C function or modul
 | ----- | ----- | ------ | ---------- |
 | **1. Isolate** | C codebase | Function candidates | Dependency analysis |
 | **2. Prototype** | C signatures | Rust signatures | Compilation `cargo check` |
-| **3. Unit tests** | Function behavior | Unit test suite | `cargo test -F fallback` |
+| **3. Unit tests** | Function behavior | Unit test suite | `cargo test -F legacy_build` |
 | **4. Implement** | Test suite | Pure Rust implementation | Tests pass `cargo test` |
 | **5. Integrate** | Rust functions | C-compatible API | Integration tests `cmake build` |
 
@@ -154,10 +154,10 @@ You could find declarations of the FFI functions for the next step in this file.
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja -DRC_FALLBACK=ON
+cmake --fresh -B build -G Ninja -DLEGACY_BUILD=ON
 cmake --build build -t xaacdec # Runs cmake build once to create reference C lib
 cd decoder
-cargo build -F fallback
+cargo build -F legacy_build
 ```
 
 #### Step 2.2: Create Rust functions
@@ -171,7 +171,7 @@ use crate::gen_ixheaacd_ref::*;
 pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8) {
     assert_eq!(dest.len(), src.len());
     
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy_build")]
     unsafe {
         // Call original C implementation via FFI
         ixheaacd_scale_down(
@@ -188,7 +188,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8) {
 **Check Build:**
 
 ```bash
-cargo build --features fallback
+cargo build --features legacy_build
 ```
 
 ---
@@ -220,7 +220,7 @@ mod tests {
 
 ```bash
 # Run tests with original C implementation
-cargo test -F fallback
+cargo test -F legacy_build
 ```
 
 ---
@@ -258,7 +258,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy_build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_scale_down(
             dest.as_mut_ptr(), 
@@ -267,7 +267,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
             shift1, shift2);
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy_build"))]
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
@@ -285,11 +285,11 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 #### Step 4.3: Verify Implementation
 
 ```bash
-# Run tests without fallback (pure Rust)
+# Run tests without legacy_build (pure Rust)
 cargo test
 
 # Compare with C implementation
-cargo test --features fallback
+cargo test --features legacy_build
 ```
 
 **Both must pass identically!**
@@ -317,7 +317,7 @@ pub use basic_ops::*;
 ```rust
 // decoder/src/lib.rs
 
-#[cfg(not(feature = "fallback"))]
+#[cfg(not(feature = "legacy_build"))]
 mod integration_test {
     use crate::gen_ixheaacd_ref::*;
     use std::slice;
@@ -349,7 +349,7 @@ mod integration_test {
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja -DRC_FALLBACK=OFF -DCMAKE_BUILD_TYPE=Debug
+cmake --fresh -B build -G Ninja -DLEGACY_BUILD=OFF -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -t xaacdec
 
 # Output: build/xaacdec
@@ -413,7 +413,7 @@ diff test/output.pcm /test/reference_output.pcm
    - Keep C and Rust versions side-by-side during transition
 
 2. **Risk Mitigation**
-   - Always have fallback to C implementation
+   - Retain low-effort switch to C implementation
    - Run extensive regression tests
    - Deploy gradually (feature flags)
 
@@ -431,15 +431,15 @@ diff test/output.pcm /test/reference_output.pcm
 ```toml
 [features]
 default = []
-fallback = []           # Use C implementation via FFI
+legacy_build = []           # Use C implementation via FFI
 simd = []              # Enable SIMD optimizations (future)
 ```
 
 **Usage:**
 
 ```bash
-cargo build --features fallback
-cargo test --features "fallback,simd"
+cargo build --features legacy_build
+cargo test --features "legacy_build,simd"
 ```
 
 ### B. Common Type Mappings
@@ -483,7 +483,7 @@ let bindings = bindgen::Builder::default()
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja -DRC_FALLBACK=ON  # -DCMAKE_BUILD_TYPE=Debug
+cmake --fresh -B build -G Ninja -DLEGACY_BUILD=ON  # -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -t xaacdec xaacenc
 ```
 
@@ -491,7 +491,7 @@ cmake --build build -t xaacdec xaacenc
 
 ```bash
 cd libxaac # root of repo
-cmake --fresh -B build -G Ninja -DRC_FALLBACK=OFF # -DCMAKE_BUILD_TYPE=Debug
+cmake --fresh -B build -G Ninja -DLEGACY_BUILD=OFF # -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -t xaacdec
 ```
 
@@ -562,7 +562,7 @@ This migration process provides a **systematic, low-risk approach** to transitio
 
 **Key Success Factors:**
 
-- Incremental migration with fallback support
+- Incremental migration retaining switch to legacy implementation
 - Test-driven development
 - Performance validation at each step
 - Comprehensive documentation
@@ -570,5 +570,5 @@ This migration process provides a **systematic, low-risk approach** to transitio
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** 2025-12-31  
+**Last Updated:** 2026-02-05  
 **Maintained By:** Rust Migration Team

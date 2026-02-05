@@ -29,29 +29,29 @@ cargo bench -- --test
 
 ### Prerequisites
 
-**The C library must be built in release configuration before running fallback benchmarks.**
+**The C library must be built in release configuration before running legacy_build benchmarks.**
 
 ```bash
 # Build C library in release mode (from project root)
-cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja -DRC_FALLBACK
+cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja -DLEGACY_BUILD
 cmake --build build --config Release
 ```
 
 ### Step 1: Save C Implementation Baseline
 
-Run benchmarks with the `fallback` feature enabled to use the original C implementation via FFI:
+Run benchmarks with the `legacy_build` feature enabled to use the original C implementation via FFI:
 
 ```bash
 # Save baseline for specific benchmark group
-cargo bench -F fallback -- --save-baseline c_impl "windowing_long1"
+cargo bench -F legacy_build -- --save-baseline c_impl "windowing_long1"
 
 # Save baseline for single benchmark
-cargo bench -F fallback -- --save-baseline c_impl "windowing_long1/1024_shift1_gt"
+cargo bench -F legacy_build -- --save-baseline c_impl "windowing_long1/1024_shift1_gt"
 ```
 
 ### Step 2: Compare Rust Implementation
 
-Run benchmarks without the `fallback` feature to use the pure Rust implementation and compare against the saved baseline:
+Run benchmarks without the `legacy_build` feature to use the pure Rust implementation and compare against the saved baseline:
 
 ```bash
 # Compare specific benchmark group
@@ -198,7 +198,7 @@ sudo cpupower frequency-set --governor performance
 
 **Solution:** Run the baseline save command first:
 ```bash
-cargo bench -F fallback -- --save-baseline c_impl
+cargo bench -F legacy_build -- --save-baseline c_impl
 ```
 
 ### Unexpectedly Slow Performance
@@ -231,7 +231,7 @@ jobs:
 
       # Save C baseline
       - name: Save C baseline
-        run: cargo bench -F fallback -- --save-baseline c_impl
+        run: cargo bench -F legacy_build -- --save-baseline c_impl
 
       # Compare Rust implementation
       - name: Compare Rust vs C

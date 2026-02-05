@@ -1,12 +1,12 @@
 
 pub mod ixheaacd;
 
-// next mod is needed for migration process only 
+// next mod is needed for migration process only
 mod gen_ixheaacd_ref;
 
 
-#[cfg(all(feature = "fallback", feature = "integration"))]
-compile_error!("features \"fallback\" and \"intergation\" cannot be enabled at the same time");
+#[cfg(all(feature = "legacy_build", feature = "integration"))]
+compile_error!("features \"legacy_build\" and \"intergation\" cannot be enabled at the same time");
 
 #[cfg(feature = "integration")]
 mod integration_test {
@@ -31,7 +31,7 @@ mod integration_test {
             let lpd_sbf_len = (NUM_FRAMES * (*usac_data).num_subfrm as u32) / 2;
             let synth_delay = (lpd_sbf_len - 1) * LEN_SUBFR;
             let buffer_slice = slice::from_raw_parts_mut(
-                out_buffer, 
+                out_buffer,
                 (synth_delay + (*usac_data).ccfl as u32 + LEN_SUBFR) as usize,
             );
             let res = ixheaacd::lpd_bpf_fix(

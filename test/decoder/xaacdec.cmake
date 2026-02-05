@@ -28,7 +28,7 @@ include_directories(${LIBXAACDEC_INCLUDES})
 libxaac_add_executable(xaacdec libxaacdec SOURCES ${XAACDEC_SRCS} INCLUDES
                        ${LIBXAACDEC_INCLUDES})
 
-if(NOT RC_FALLBACK)
+if(NOT LEGACY_BUILD)
     target_link_libraries(xaacdec librustdec)
     if(WIN32)
         target_link_libraries(xaacdec kernel32 ws2_32 ntdll userenv dbghelp)

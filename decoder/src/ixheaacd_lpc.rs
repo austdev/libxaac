@@ -80,7 +80,7 @@ pub enum LpcError {
 /// Result type for LPC operations
 pub type LpcResult<T> = Result<T, LpcError>;
 
-#[cfg(not(feature = "fallback"))]
+#[cfg(not(feature = "legacy_build"))]
 /// Applies bass post-filter to reduce inter-harmonic noise in voiced speech.
 ///
 /// The filter exploits pitch periodicity by computing a noise signal from the
@@ -247,9 +247,9 @@ pub fn lpd_bpf_fix(
     is_short_flag: bool, // True if previous frame used short windows
     out_buffer: &mut [f32], // Audio sample buffer (input/output)
     st: &mut crate::gen_ixheaacd_ref::ia_usac_lpd_decoder, // LPD decoder state
-) -> LpcResult<()> 
+) -> LpcResult<()>
 {
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy_build")]
     #[allow(invalid_reference_casting)]
     unsafe {
         let result = crate::gen_ixheaacd_ref::ixheaacd_lpd_bpf_fix(
@@ -261,7 +261,7 @@ pub fn lpd_bpf_fix(
         return if result == 0 { Ok(()) } else { Err(LpcError::InvalidPitchLag) };
     };
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy_build"))]
     {
         // Calculate derived values
         let len_fr = usac_data.ccfl as usize;
@@ -468,7 +468,7 @@ mod tests {
     fn test_lpd_bpf_fix(
         #[glob = "tests/fixtures/lpd_bpf_fix_*.json"] test_data: &TestFile,
     ) {
-        let test_data: LpdBpfFixTestData = 
+        let test_data: LpdBpfFixTestData =
             serde_json::from_slice(&test_data.raw_read()).
             expect("Failed to parse test data JSON");
 
@@ -486,7 +486,7 @@ mod tests {
             if relative_ne!(buffer[i], test_data.output[i], epsilon = 1e-6) {
                 eprintln!("Mismatch at index {}: {:.6} instead of {:.6}", i, buffer[i], test_data.output[i]);
                 failed += 1;
-                if failed > 10 { 
+                if failed > 10 {
                     break;
                 }
             }
