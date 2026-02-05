@@ -138,6 +138,9 @@ endif()
 
 add_library(libxaacdec ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
 set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "xaacdec")
+if(NOT BUILD_SHARED_LIBS)
+  set_target_properties(libxaacdec PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+endif()
 
 if(RC_FALLBACK)
     get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)

@@ -12,6 +12,24 @@ mod ixheaacd_metadata_read;
 mod ixheaacd_error;
 mod ixheaacd_fileifc;
 
+/// Retrurns C-compatible stderr handle
+#[inline(always)]
+unsafe fn get_stderr_fd() -> *mut FILE {
+    // Non‑Windows: the C runtime exposes stderr directly
+    #[cfg(not(windows))]
+    { stderr }
+
+    // Windows: use the CRT’s own accessors for standard streams (0=stdin, 1=stdout, 2=stderr)
+
+    // Windows + MSVC: MSVC/UCRT’s __acrt_iob_func accessor
+    #[cfg(all(windows, target_env = "msvc"))]
+    { __acrt_iob_func(2) }
+
+    // Windows + MinGW: array of CRT FILE* from __iob_func()
+    #[cfg(all(windows, target_env = "gnu"))]
+    { __iob_func().add(2) }
+}
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -61,7 +79,20 @@ extern "C" {
     fn malloc(__size: size_t) -> *mut core::ffi::c_void;
     fn free(__ptr: *mut core::ffi::c_void);
     fn exit(__status: core::ffi::c_int) -> !;
+
+    #[cfg(not(windows))]
     static mut stderr: *mut FILE;
+
+    // Windows + MSVC: accessor (2 == stderr)
+    #[cfg(all(windows, target_env = "msvc"))]
+    fn __acrt_iob_func(index: i32) -> *mut FILE;
+
+    // Windows + MinGW (GNU): returns pointer to FILE array; [2] is stderr
+    // (MinGW-w64 provides this for msvcrt-style CRT; widely available)
+    #[cfg(all(windows, target_env = "gnu"))]
+    fn __iob_func() -> *mut FILE;
+
+
     fn fclose(__stream: *mut FILE) -> core::ffi::c_int;
     fn fflush(__stream: *mut FILE) -> core::ffi::c_int;
     fn fopen(
@@ -4266,7 +4297,7 @@ pub unsafe extern "C" fn ixheaacd_main_process(
         }
     }
     fprintf(
-        stderr,
+        get_stderr_fd(),
         b"TOTAL FRAMES : [%5d] \n\0" as *const u8 as *const core::ffi::c_char,
         frame_counter,
     );
