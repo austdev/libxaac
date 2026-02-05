@@ -12,6 +12,20 @@ mod ixheaacd_metadata_read;
 mod ixheaacd_error;
 mod ixheaacd_fileifc;
 
+/// Retrurns C-compatible stderr handle
+#[inline(always)]
+fn get_stderr_fd() -> *mut FILE {
+    #[cfg(not(target_env = "msvc"))]
+    return stderr;
+
+    #[cfg(target_env = "msvc")]
+    {
+        use std::os::windows::io::AsRawHandle;
+        let handle = std::io::stderr().as_raw_handle();
+        return handle as *mut FILE;
+    }
+}
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -4266,10 +4280,8 @@ pub unsafe extern "C" fn ixheaacd_main_process(
             break;
         }
     }
-    // TODO: get stderr on msvc
-    #[cfg(not(target_env = "msvc"))]
     fprintf(
-        stderr,
+        get_stderr_fd(),
         b"TOTAL FRAMES : [%5d] \n\0" as *const u8 as *const core::ffi::c_char,
         frame_counter,
     );
