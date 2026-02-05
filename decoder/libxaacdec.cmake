@@ -143,8 +143,9 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 if(LEGACY_BUILD)
-    get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "${FILE_NAME}-legacy")
+    get_target_property(FILE_NAME libxaacdec OUTPUT_NAME)
+    message(STATUS "Legacy build of the ${FILE_NAME}, the output file: ${FILE_NAME}${LEGACY_BUILD_SUFFIX}")
+    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "${FILE_NAME}${LEGACY_BUILD_SUFFIX}")
 else()
     set(RUST_DECODER_LIB "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
