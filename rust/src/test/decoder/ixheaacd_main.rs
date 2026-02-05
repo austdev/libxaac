@@ -16,7 +16,7 @@ mod ixheaacd_fileifc;
 #[inline(always)]
 fn get_stderr_fd() -> *mut FILE {
     #[cfg(not(target_env = "msvc"))]
-    return stderr;
+    return unsafe { stderr };
 
     #[cfg(target_env = "msvc")]
     {
