@@ -17,7 +17,8 @@ fn main() {
     println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
 
     // Link definitions of `printf` and other legacy functions that are not in the msvcrt
-    #[cfg(target_env = "msvc")]
-    println!("cargo:rustc-link-lib=legacy_stdio_definitions");
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+        println!("cargo:rustc-link-lib=legacy_stdio_definitions");
+    }
 
 }
