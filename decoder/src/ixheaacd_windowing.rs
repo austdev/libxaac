@@ -3,7 +3,7 @@
 //! Window calculation for IMDCT operations
 //!
 
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 use super::rom;
 
 /// Window type selection
@@ -42,7 +42,7 @@ pub fn calc_window(
     ec_flag: bool, // Error concealment flag: if true, returns default window for invalid sizes
 ) -> Option<&'static [i32]>  // Reference to window coefficients on success
 {
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut win_ptr: *mut i32 = std::ptr::null_mut();
         let result = crate::gen_ixheaacd_ref::ixheaacd_calc_window(
@@ -58,7 +58,7 @@ pub fn calc_window(
         }
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         match win_type {
             WindowType::Sine => calc_sine_window(win_sz, ec_flag),
@@ -67,7 +67,7 @@ pub fn calc_window(
     }
 }
 
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 fn calc_sine_window(win_sz: i32, ec_flag: bool) -> Option<&'static [i32]> {
     match win_sz {
         WIN_LEN_64 => Some(&rom::SINE_WIN_64),
@@ -82,7 +82,7 @@ fn calc_sine_window(win_sz: i32, ec_flag: bool) -> Option<&'static [i32]> {
     }
 }
 
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 fn calc_kbd_window(win_sz: i32, ec_flag: bool) -> Option<&'static [i32]> {
     match win_sz {
         WIN_LEN_4 => Some(&rom::KBD_WIN4),

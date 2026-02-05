@@ -37,7 +37,7 @@ The decoder is being incrementally migrated to Rust following a 5-phase cycle pe
 
 1. **Isolate** - Identify group of C functions
 2. **Stub** - Create Rust wrappers calling C via FFI
-3. **Tests** - Write unit tests with `--features legacy_build`
+3. **Tests** - Write unit tests with `--features legacy-build`
 4. **Implement** - Pure Rust, validated by tests
 5. **Integrate** - Export as C-compatible API
 

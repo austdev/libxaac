@@ -11,7 +11,7 @@ const ADJ_SCALE: i32 = 11;
 // ============================================================================
 
 /// Extension trait for fixed-point DSP operations on i32
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 trait FixedPointOps {
     /// Q31 fixed-point multiply: (a * b) >> 31
     fn mult_shift_q31(self, other: Self) -> Self;
@@ -19,7 +19,7 @@ trait FixedPointOps {
     fn saturating_shl(self, shift: u32) -> Self;
 }
 
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 impl FixedPointOps for i32 {
     #[inline]
     fn mult_shift_q31(self, other: Self) -> Self {
@@ -104,7 +104,7 @@ pub fn combine_fac(
     assert_eq!(src1.len(), src2.len(), "src1 and src2 must have same length");
     assert_eq!(src1.len(), dest.len(), "src1 and dest must have same length");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_combine_fac(
             src1.as_ptr() as *mut i32,
@@ -116,7 +116,7 @@ pub fn combine_fac(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         if shift2 > shift1 {
             // Right-shift src2 before adding
@@ -165,7 +165,7 @@ pub fn windowing_long1(
     assert_eq!(win_fwd.len(), vlen, "win_fwd must have at least vlen/2 samples");
     assert_eq!(win_rev.len(), vlen, "win_rev must have at least vlen/2 samples");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let win_rev = win_rev.as_ptr().add(win_rev.len() - 1);
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
@@ -180,7 +180,7 @@ pub fn windowing_long1(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = vlen / 2;
 
@@ -249,7 +249,7 @@ pub fn windowing_long2(
     assert!(over_lap.len() >= lfac + n_flat_ls, "overlap buffer too small");
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
@@ -265,7 +265,7 @@ pub fn windowing_long2(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         // Region boundaries
         let region1_end = n_flat_ls + lfac;
@@ -415,7 +415,7 @@ pub fn windowing_long3(
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
     assert!(win_rev.len() >= n_trans_ls, "win_rev too small");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         let win_rev = win_rev.as_ptr().add(n_trans_ls - 1);
@@ -431,7 +431,7 @@ pub fn windowing_long3(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         // Region boundaries
         let half = n_long / 2;
@@ -531,7 +531,7 @@ pub fn windowing_short1(
     assert_eq!(src2.len(), n_short, "src2 must have n_short samples");
     assert!(fp.len() >= n_flat_ls + lfac, "fp must have at least n_flat_ls + lfac samples");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
@@ -544,7 +544,7 @@ pub fn windowing_short1(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         if shift_olap > shiftp {
             let shift = (shift_olap - shiftp) as u32;
@@ -608,7 +608,7 @@ pub fn windowing_short2(
     assert!(win_fwd.len() >= n_short, "win_fwd must have at least n_short samples");
     assert!(fp.len() >= n_flat_ls + n_short, "fp must have at least n_flat_ls + n_short samples");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
@@ -621,7 +621,7 @@ pub fn windowing_short2(
         );
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
@@ -685,7 +685,7 @@ pub fn windowing_short3(
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
     assert_eq!(n_short, fp.len(), "overlap buffer must have same length");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let win_rev = win_fwd.as_ptr().add(n_short - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short3(
@@ -698,7 +698,7 @@ pub fn windowing_short3(
         )
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
@@ -786,7 +786,7 @@ pub fn windowing_short4(
     assert_eq!(n_short * 2, fp.len(), "overlap buffer must have double length");
     assert!(shiftp >= output_q, "output_q must be min(shiftp, shift_olap)");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let src1 = src1.as_ptr();
         let win_fwd = win_fwd.as_ptr();
@@ -801,7 +801,7 @@ pub fn windowing_short4(
             shiftp, shift_olap, output_q)
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
@@ -898,7 +898,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_scale_down(
             dest.as_mut_ptr(),
@@ -907,7 +907,7 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
             shift1, shift2);
     }
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
@@ -933,7 +933,7 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
 
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_scale_down_adj(
             dest.as_mut_ptr(),
@@ -941,7 +941,7 @@ pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
             src.len() as i32,
             shift1, shift2);
     }
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {

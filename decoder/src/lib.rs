@@ -5,8 +5,8 @@ pub mod ixheaacd;
 mod gen_ixheaacd_ref;
 
 
-#[cfg(all(feature = "legacy_build", feature = "integration"))]
-compile_error!("features \"legacy_build\" and \"intergation\" cannot be enabled at the same time");
+#[cfg(all(feature = "legacy-build", feature = "integration"))]
+compile_error!("features \"legacy-build\" and \"integration\" cannot be enabled at the same time");
 
 #[cfg(feature = "integration")]
 mod integration_test {

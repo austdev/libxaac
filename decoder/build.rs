@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 
 fn main() {
-    if cfg!(feature = "legacy_build") {
+    if cfg!(feature = "legacy-build") {
         println!("cargo:rustc-link-search=native=build");
         println!("cargo:rustc-link-lib=static=xaacdec-legacy");
     }

@@ -80,7 +80,7 @@ pub enum LpcError {
 /// Result type for LPC operations
 pub type LpcResult<T> = Result<T, LpcError>;
 
-#[cfg(not(feature = "legacy_build"))]
+#[cfg(not(feature = "legacy-build"))]
 /// Applies bass post-filter to reduce inter-harmonic noise in voiced speech.
 ///
 /// The filter exploits pitch periodicity by computing a noise signal from the
@@ -249,7 +249,7 @@ pub fn lpd_bpf_fix(
     st: &mut crate::gen_ixheaacd_ref::ia_usac_lpd_decoder, // LPD decoder state
 ) -> LpcResult<()>
 {
-    #[cfg(feature = "legacy_build")]
+    #[cfg(feature = "legacy-build")]
     #[allow(invalid_reference_casting)]
     unsafe {
         let result = crate::gen_ixheaacd_ref::ixheaacd_lpd_bpf_fix(
@@ -261,7 +261,7 @@ pub fn lpd_bpf_fix(
         return if result == 0 { Ok(()) } else { Err(LpcError::InvalidPitchLag) };
     };
 
-    #[cfg(not(feature = "legacy_build"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         // Calculate derived values
         let len_fr = usac_data.ccfl as usize;
