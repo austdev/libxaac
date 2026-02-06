@@ -2,11 +2,17 @@ use std::env;
 
 fn main() {
     // Configuration type:
-    let config = env::var("PROFILE").unwrap();
-    let config = if config == "release" { "Release" } else { "Debug" };
+    let legacy = std::env::var("CARGO_FEATURE_LEGACY_BUILD").is_ok();
+    let profile = env::var("PROFILE").unwrap();
+    let config = if profile == "release" { "Release" } else { "Debug" };
 
-    println!("cargo:rustc-link-search=native=../build/{}", config);
-    println!("cargo:rustc-link-lib=dylib=xaacdec-legacy");
+    if legacy {
+        println!("cargo:rustc-link-search=native=../build/{}", config);
+        println!("cargo:rustc-link-lib=dylib=xaacdec-legacy");
+    }
+    else {
+        todo!("Linking to Rust lib not yet implemented");
+    }
 
     // Make the binary find the .so at runtime without LD_LIBRARY_PATH:
     #[cfg(target_os = "linux")]
