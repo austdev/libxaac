@@ -333,7 +333,7 @@ IA_ERRORCODE ixheaacd_cal_fac_data(ia_usac_data_struct *usac_data, WORD32 i_ch,
   return IA_NO_ERROR;
 }
 
-static IA_ERRORCODE ixheaacd_fd_imdct_short(ia_usac_data_struct *usac_data,
+IA_ERRORCODE ixheaacd_fd_imdct_short(ia_usac_data_struct *usac_data,
                                             WORD32 i_ch, WORD32 *fac_data_out,
                                             offset_lengths *ixheaacd_drc_offset,
                                             WORD8 fac_q) {
@@ -474,7 +474,7 @@ static IA_ERRORCODE ixheaacd_fd_imdct_short(ia_usac_data_struct *usac_data,
   return 0;
 }
 
-static IA_ERRORCODE ixheaacd_fd_imdct_long(ia_usac_data_struct *usac_data,
+IA_ERRORCODE ixheaacd_fd_imdct_long(ia_usac_data_struct *usac_data,
                                            WORD32 i_ch, WORD32 *fac_idata,
                                            offset_lengths *ixheaacd_drc_offset,
                                            WORD8 fac_q) {

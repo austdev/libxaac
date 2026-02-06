@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_PS_DEC_H
 #define IXHEAACD_PS_DEC_H
 
+#include "ixheaacd_hybrid.h"
+
 #define MAX_NUM_COLUMNS 32
 
 #define MAX_NUM_COLUMNS_960 30

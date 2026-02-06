@@ -20,6 +20,9 @@
 #ifndef IXHEAACD_QMF_DEC_H
 #define IXHEAACD_QMF_DEC_H
 
+#include "ixheaacd_ps_dec.h"
+#include "ixheaacd_common_rom.h"
+
 typedef struct {
   WORD32 no_channels;
   const WORD16 *analy_win_coeff;

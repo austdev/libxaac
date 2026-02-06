@@ -490,9 +490,9 @@ mod tests {
                     break;
                 }
             }
-            if failed > 0 {
-                panic!();
-            }
+        }
+        if failed > 0 {
+            panic!();
         }
     }
 

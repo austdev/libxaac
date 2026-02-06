@@ -20,6 +20,11 @@
 #ifndef IXHEAACD_SBR_ROM_H
 #define IXHEAACD_SBR_ROM_H
 
+#include "ixheaac_type_def.h"
+#include "ixheaacd_bitbuffer.h"
+#include "ixheaacd_sbrdecsettings.h"
+#include "ixheaacd_env_extr_part.h"
+
 #define INV_INT_TABLE_SIZE 49
 #define SBR_NF_NO_RANDOM_VAL 512
 #define NUM_SER_AP_LINKS 3

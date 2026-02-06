@@ -51,7 +51,7 @@ impl FixedPointOps for i32 {
  impl OffsetLengths {
 
     /// Copy as C struct
-    fn as_c_struct(&self) -> crate::gen_ixheaacd_ref::offset_lengths {
+    pub(crate) fn as_c_struct(&self) -> crate::gen_ixheaacd_ref::offset_lengths {
         crate::gen_ixheaacd_ref::offset_lengths {
             lfac: self.lfac as std::os::raw::c_int,
             n_flat_ls: self.n_flat_ls as std::os::raw::c_int,

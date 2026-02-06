@@ -20,6 +20,9 @@
 #ifndef IXHEAACD_CONFIG_H
 #define IXHEAACD_CONFIG_H
 
+#include "ixheaac_type_def.h"
+#include "ixheaacd_bitbuffer.h"
+
 #define USAC_MAX_ELEMENTS (16)
 
 #define USAC_MAX_CONFIG_EXTENSIONS (16)

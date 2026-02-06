@@ -20,6 +20,8 @@
 #ifndef IXHEAACD_HYBRID_H
 #define IXHEAACD_HYBRID_H
 
+#include "ixheaac_type_def.h"
+
 #define HYBRID_FILTER_LENGTH 13
 #define HYBRID_FILTER_DELAY 6
 #define NO_QMF_CHANNELS_IN_HYBRID 3

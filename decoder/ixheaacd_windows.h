@@ -20,7 +20,7 @@
 #ifndef IXHEAACD_WINDOWS_H
 #define IXHEAACD_WINDOWS_H
 
-#include "ixheaac_type_def.h"
+#include "ixheaacd_main.h"
 
 extern const WORD32 ixheaacd_sine_win_128[128];
 extern const WORD32 ixheaacd_sine_win_1024[1024];
@@ -59,5 +59,11 @@ typedef struct {
   WORD32 n_short;
 
 } offset_lengths;
+
+IA_ERRORCODE ixheaacd_fd_imdct_short(ia_usac_data_struct *usac_data, WORD32 i_ch,
+                                     WORD32 *fac_data_out, offset_lengths *ixheaacd_drc_offset, WORD8 fac_q);
+
+IA_ERRORCODE ixheaacd_fd_imdct_long(ia_usac_data_struct *usac_data, WORD32 i_ch,
+                                    WORD32 *fac_idata, offset_lengths *ixheaacd_drc_offset, WORD8 fac_q);
 
 #endif
