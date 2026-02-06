@@ -37,9 +37,11 @@
 
 
 .\xaacenc.exe -ifile:test_2MB.wav -ofile:test2_aot42.aac -aot:42 -usac:1 -br:128000 -ccfl_idx:3 -esbr:1 -harmonic_sbr:1
-
 .\xaacdec.exe -ifile:test2_aot42.aac -imeta:test2_aot42.txt -ofile:output.pcm -mp4:1
+                                                                                5
 
+.\xaacenc.exe -ifile:test_5MB.wav -ofile:test5_aot42_0.aac -aot:42 -usac:0 -br:24000 -ccfl_idx:3 -esbr:1 -harmonic_sbr:1
+.\xaacdec.exe -ifile:test5_aot42_0.aac -imeta:test5_aot42_0.txt -ofile:output.pcm -mp4:1
 
 
                                                     For Speech:

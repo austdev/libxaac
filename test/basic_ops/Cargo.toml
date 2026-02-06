@@ -1,0 +1,10 @@
+[package]
+name = "basic_ops"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "basic_ops"
+path = "main.rs"
+
+[workspace]
