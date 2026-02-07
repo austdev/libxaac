@@ -46,14 +46,13 @@ impl FixedPointOps for i32 {
 
 /// Count leading zeros normalization (ixheaac_norm32)
 #[inline]
-fn norm32(a: i32) -> i32 {
-    if a == 0 || a == -1 { return 31; }
-    (if a < 0 { !a } else { a }).leading_zeros() as i32 - 1
+fn norm32(a: u32) -> i16 {
+    (if (a & 0x80000000) != 0 { !a } else { a }).leading_zeros() as i16 - 1
 }
 
 /// Bit-reversal permutation index (DIG_REV macro)
 #[inline]
-fn dig_rev(i: usize, m: u32) -> usize {
+fn dig_rev(i: usize, m: i16) -> usize {
     let mut v = i as u32;
     v = ((v & 0x33333333) << 2) | ((v & !0x33333333) >> 2);
     v = ((v & 0x0F0F0F0F) << 4) | ((v & !0x0F0F0F0F) >> 4);
@@ -243,9 +242,9 @@ pub fn complex_fft_p2(
     preshift: i32,         // Initial scaling factor
 ) -> i32  // Updated preshift value after transform.
 {
-    let nlength = xr.len();
-    assert!(nlength <= 512, "Power-of-2 FFT supports lengths up to 512");
-    assert!(nlength.is_power_of_two(), "Power-of-2 FFT requires power-of-2 length");
+    let npoints = xr.len();
+    assert!(npoints <= 512, "Power-of-2 FFT supports lengths up to 512");
+    assert!(npoints.is_power_of_two(), "Power-of-2 FFT requires power-of-2 length");
     assert_eq!(xr.len(), xi.len(), "Real and imaginary arrays must have equal length");
 
     #[cfg(feature = "fallback")]
@@ -254,7 +253,7 @@ pub fn complex_fft_p2(
         crate::gen_ixheaacd_ref::ixheaacd_complex_fft_p2_dec(
             xr.as_mut_ptr(),
             xi.as_mut_ptr(),
-            nlength as i32,
+            npoints as i32,
             fft_mode.sign(),
             &mut preshift_out,
         );
@@ -263,31 +262,34 @@ pub fn complex_fft_p2(
 
     use crate::ixheaacd::rom::TWIDDLE_TABLE_FFT_32X32;
 
-    let npoints = nlength;
     let forward = fft_mode == FftMode::Forward;
-    let dig_rev_shift = (norm32(npoints as i32) + 1 - 16) as u32;
-    let mut n_stages = 30 - norm32(npoints as i32);
+    let dig_rev_shift = norm32(npoints as u32) + 1 - 16;
+    let mut n_stages = 30 - norm32(npoints as u32);
     let not_power_4 = (n_stages & 1) != 0;
     n_stages >>= 1;
 
     // Compute bit-count n and shift
     let mut n = 0u32;
-    let mut npts = npoints;
-    while npts >> 1 != 0 {
+    let mut npts = npoints >> 1;
+    while npts != 0 {
         n += 1;
         npts >>= 1;
     }
-    let mut shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 3) / 2 } as i32;
+    let mut shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 3) / 2 };
 
     // Scale input into interleaved working buffer
-    let mut ptr_x = [0i32; 1024];
     let scale = 1i32 << shift;
-    for i in 0..nlength {
+    let mut ptr_x = [0i32; 1024]; // buffer on the stack!
+    for i in 0..npoints {
         ptr_x[2 * i] = xr[i] / scale;
         ptr_x[2 * i + 1] = xi[i] / scale;
     }
 
-    let mut y = [0i32; 1024];
+    // Next code works slower (15%), but buffer on the heap.
+    //let ptr_x: Vec<_> = xr.iter().zip(xi.iter()).
+    //        flat_map(|(a, b)| [a / scale, b / scale]).collect();
+
+    let mut y = [0i32; 1024]; // buffer on the stack!
 
     // Initial radix-4 pass with bit-reversal
     {
@@ -322,11 +324,11 @@ pub fn complex_fft_p2(
     let tw_apply_wrap: fn(i32, i32, u32, u32) -> (i32, i32) = if forward { tw_fwd_wrap } else { tw_inv_wrap };
     let tw_apply_wrap2: fn(i32, i32, u32, u32) -> (i32, i32) = if forward { tw_fwd_wrap2 } else { tw_inv_wrap2 };
 
-    for _stage in (1..n_stages as usize).rev() {
+    for _ in 1..n_stages {
         // Range 0: no twiddles (j=0)
         {
             let mut base = 0usize;
-            for _k in 0..in_loop_cnt {
+            for _ in 0..in_loop_cnt {
                 let stride = del << 1;
                 let x0r = y[base];
                 let x0i = y[base + 1];
@@ -545,12 +547,12 @@ pub fn complex_fft_p2(
     }
 
     // Deinterleave output
-    for i in 0..nlength {
+    for i in 0..npoints {
         xr[i] = y[2 * i];
         xi[i] = y[2 * i + 1];
     }
 
-    shift - preshift
+    shift as i32 - preshift
 }
 
 /// Radix-3 DFT butterfly for mixed-radix FFT.
@@ -665,15 +667,15 @@ pub fn complex_fft_p3(
 
     // Compute shift from mpass (matching C behavior)
     let mut n = 0u32;
-    let mut npts = mpass;
-    while npts >> 1 != 0 {
+    let mut npts = mpass >> 1;
+    while npts != 0 {
         n += 1;
         npts >>= 1;
     }
     let shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 5) / 2 } as i32;
 
     // Scale and interleave into working buffer
-    let mut ptr_x = vec![0i32; 768];
+    let mut ptr_x = [0i32; 768];
     for i in 0..nlength {
         ptr_x[2 * i] = xr[i] >> 1;
         ptr_x[2 * i + 1] = xi[i] >> 1;
