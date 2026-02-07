@@ -26,3 +26,7 @@ bindgen = "0.72"
 [[bench]]
 name = "windowing_bench"
 harness = false
+
+[[bench]]
+name = "complex_fft_bench"
+harness = false
