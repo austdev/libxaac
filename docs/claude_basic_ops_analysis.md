@@ -430,8 +430,8 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 - If `shift1 == shift2`: Copy (no-op in Rust implementation)
 
 **Rust Implementation:**
-- `#[cfg(feature = "fallback")]`: Calls C via FFI
-- `#[cfg(not(feature = "fallback"))]`: Pure Rust with `shl32_sat()` helper
+- `#[cfg(feature = "legacy-build")]`: Calls C via FFI
+- `#[cfg(not(feature = "legacy-build"))]`: Pure Rust with `shl32_sat()` helper
 
 ---
 
@@ -504,6 +504,6 @@ Window arrays are typically Q31 format (0x7FFFFFFF = 1.0).
    - Controls regional processing in long block functions
    - Critical for AAC frame structure compliance
 
-5. **Fallback Feature:**
-   - `#[cfg(feature = "fallback")]` enables C FFI for validation
+5. **Legacy Build Feature:**
+   - `#[cfg(feature = "legacy-build")]` enables C FFI for validation
    - Pure Rust implementation must match C behavior exactly

@@ -18,7 +18,7 @@ list(
   "${XAAC_ROOT}/decoder/ixheaacd_avq_dec.c"
   "${XAAC_ROOT}/decoder/ixheaacd_avq_rom.c"
   "${XAAC_ROOT}/decoder/ixheaacd_basic_funcs.c"
-  "$<$<BOOL:${RC_FALLBACK}>:${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c>"
+  "$<$<BOOL:${LEGACY_BUILD}>:${XAAC_ROOT}/decoder/ixheaacd_basic_ops.c>"
   "${XAAC_ROOT}/decoder/ixheaacd_bitbuffer.c"
   "${XAAC_ROOT}/decoder/ixheaacd_block.c"
   "${XAAC_ROOT}/decoder/ixheaacd_channel.c"
@@ -121,7 +121,7 @@ list(
   "${XAAC_ROOT}/decoder/ixheaacd_thumb_ps_dec.c"
   "${XAAC_ROOT}/decoder/ixheaacd_tns.c"
   "${XAAC_ROOT}/decoder/ixheaacd_usac_ec.c"
-  "$<$<BOOL:${RC_FALLBACK}>:${XAAC_ROOT}/decoder/ixheaacd_Windowing.c>")
+  "$<$<BOOL:${LEGACY_BUILD}>:${XAAC_ROOT}/decoder/ixheaacd_Windowing.c>")
 
 set(LIBXAACDEC_INCLUDES ${XAAC_ROOT}/decoder ${XAAC_ROOT}/decoder/drc_src)
 include_directories(${LIBXAACDEC_INCLUDES})
@@ -142,9 +142,10 @@ if(NOT BUILD_SHARED_LIBS)
   set_target_properties(libxaacdec PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-if(RC_FALLBACK)
-    get_target_property(FILE_NAME  libxaacdec OUTPUT_NAME)
-    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "${FILE_NAME}-ref")
+if(LEGACY_BUILD)
+    get_target_property(FILE_NAME libxaacdec OUTPUT_NAME)
+    message(STATUS "Legacy build of the ${FILE_NAME}, the output file: ${FILE_NAME}${LEGACY_BUILD_SUFFIX}")
+    set_target_properties(libxaacdec PROPERTIES OUTPUT_NAME "${FILE_NAME}${LEGACY_BUILD_SUFFIX}")
 else()
     set(RUST_DECODER_LIB "${CMAKE_CURRENT_BINARY_DIR}/${RUST_PROFILE}/${CMAKE_STATIC_LIBRARY_PREFIX}decoder${CMAKE_STATIC_LIBRARY_SUFFIX}")
 

@@ -8,8 +8,9 @@ crate-type = ["staticlib", "rlib"]
 bench = false
 
 [features]
-fallback = [] # Stub all functions with legacy impl, for testing only
+legacy-build = [] # Stub all functions with legacy impl, for testing only
 integration = [] # Export Rust functions as C-compatible API for integration test
+fallback = ["legacy-build"] # alias for backwards compatibility
 
 [dependencies]
 
