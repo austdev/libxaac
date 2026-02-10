@@ -9,8 +9,15 @@ mod rom;
 mod windowing;
 
 #[path = "ixheaacd_lpc.rs"]
-pub mod lpc;
+mod lpc;
+
+#[path = "ixheaacd_fft.rs"]
+pub mod fft;
+
+#[path = "ixheaacd_imdct.rs"]
+mod imdct;
 
 pub use basic_ops::*;
 pub use windowing::*;
+pub use imdct::*;
 pub use lpc::*;
