@@ -16,17 +16,17 @@
     }
   },
   "legacy_build": {
-    "default": "enabled",
+    "default": "Legacy",
     "description": "Legacy build based on the original source code",
     "choices": {
-      "enabled": {
+      "Legacy": {
         "short": "Legacy",
         "long": "Use an original source code",
         "settings": {
           "LEGACY_BUILD": "ON"
         }
       },
-      "disabled": {
+      "Migration": {
         "short": "Migration",
         "long": "Use new code migrated on Rust",
         "settings": {
