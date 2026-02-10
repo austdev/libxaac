@@ -93,11 +93,7 @@ function(libxaac_add_executable NAME LIB)
   target_include_directories(${NAME} PRIVATE ${ARG_INCLUDES})
   add_dependencies(${NAME} ${LIB} ${ARG_LIBS})
 
-  if(NOT WIN32)
-    target_link_libraries(${NAME} ${LIB} ${ARG_LIBS} m)
-  else()
-    target_link_libraries(${NAME} ${LIB} ${ARG_LIBS})
-  endif()
+  target_link_libraries(${NAME} ${LIB} ${ARG_LIBS} $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
   
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i686")
 	set_target_properties(${NAME}  PROPERTIES LINK_FLAGS "-m32")

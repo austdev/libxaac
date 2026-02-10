@@ -13,14 +13,10 @@ include_directories(${LIBXAACENC_INCLUDES})
 libxaac_add_executable(xaacenc libxaacenc SOURCES ${XAACENC_SRCS} INCLUDES 
                        ${LIBXAACENC_INCLUDES})
 
-if(WIN32)
-    target_compile_definitions(xaacenc PRIVATE
-       WIN32  _CRT_SECURE_NO_WARNINGS)
-endif()
-
 target_compile_definitions(xaacenc PRIVATE
-    _X86_ LOUDNESS_LEVELING_SUPPORT) 
+    _X86_ LOUDNESS_LEVELING_SUPPORT
+    $<$<OR:$<C_COMPILER_ID:MSVC>,$<STREQUAL:${CMAKE_C_SIMULATE_ID},MSVC>>:_CRT_SECURE_NO_WARNINGS>)
 
 target_compile_options(xaacenc PRIVATE
-    $<$<C_COMPILER_ID:MSVC>:/Wall>
-    $<$<NOT:$<C_COMPILER_ID:MSVC>>: -O3;-Wall;-Wsequence-point;-Wunused-function>)
+    $<$<C_COMPILER_FRONTEND_VARIANT:MSVC>:/Wall>
+    $<$<NOT:$<C_COMPILER_FRONTEND_VARIANT:MSVC>>: -O3;-Wall;-Wsequence-point;-Wunused-function>)
