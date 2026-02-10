@@ -9,15 +9,15 @@ alias r := release
 build:
     python tooling/build.py || python3 tooling/build.py
 
-[doc("Cleans the temporary build artifacts for C++ and Rust")]
+[doc("Cleans the temporary build artifacts for CMake and Rust")]
 clean:
     python tooling/build.py --clean || python3 tooling/build.py --clean
 
-[doc("Builds Debug configuration for C++ and Rust")]
+[doc("Builds Debug configuration for CMake and Rust")]
 debug:
     python tooling/build.py --config=Debug || python3 tooling/build.py --config=Debug
 
-[doc("Builds Release configuration for C++ and Rust")]
+[doc("Builds Release configuration for CMake and Rust")]
 release:
     python tooling/build.py --config=Release || python3 tooling/build.py --config=Release
 
@@ -51,8 +51,8 @@ alias z := zed
 
 [doc("Launches Visual Studio Code from the project's root directory")]
 vscode:
-    code .
+    python tooling/launchIDE.py --vscode || python3 tooling/launchIDE.py --vscode
 
 [doc("Launches Zed from the project's root directory")]
 zed:
-    zed . > /dev/null &
+    python tooling/launchIDE.py --zed || python3 tooling/launchIDE.py --zed
