@@ -17,3 +17,6 @@ autobins = false
 path = "src/test/decoder/ixheaacd_main.rs"
 name = "ixheaacd_main_rust"
 [dependencies]
+
+[build-dependencies]
+cmake = "0.1.57"
