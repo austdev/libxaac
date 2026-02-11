@@ -1,3 +1,4 @@
+#![feature(core_intrinsics, portable_simd)]
 
 pub mod ixheaacd;
 

@@ -1,4 +1,5 @@
 // decoder::ixheaacd::fft
+
 //! FFT (Fast Fourier Transform) functions for AAC decoder
 //!
 //! This module implements complex FFT operations for both floating-point and
@@ -8,6 +9,9 @@
 //! The implementation uses radix-4 and radix-2 butterfly operations with
 //! mixed-radix support for non-power-of-2 lengths (specifically lengths
 //! containing factors of 3).
+
+use std::simd::{cmp::SimdOrd, i32x8, i64x4, Simd, simd_swizzle};
+use std::intrinsics::simd::{simd_saturating_add, simd_saturating_sub};
 
 /// FFT transform direction
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -104,6 +108,186 @@ fn radix4_butterfly(
     }
 
     [x0r, x0i, x2r, x2i, x1r, x1i, x3i, x3r]
+}
+
+
+// =============================================================================
+// SIMD Radix-4 Butterfly Implementation
+// =============================================================================
+/* 
+/// SIMD helper: saturating add for i32x8
+#[inline]
+fn simd_saturating_add(a: i32x8, b: i32x8) -> i32x8 {
+    // Widen to i64, add, clamp, narrow back
+    let a_lo = i64x4::from_array([a[0] as i64, a[1] as i64, a[2] as i64, a[3] as i64]);
+    let a_hi = i64x4::from_array([a[4] as i64, a[5] as i64, a[6] as i64, a[7] as i64]);
+    let b_lo = i64x4::from_array([b[0] as i64, b[1] as i64, b[2] as i64, b[3] as i64]);
+    let b_hi = i64x4::from_array([b[4] as i64, b[5] as i64, b[6] as i64, b[7] as i64]);
+
+    let sum_lo = a_lo + b_lo;
+    let sum_hi = a_hi + b_hi;
+
+    let min = Simd::splat(i32::MIN as i64);
+    let max = Simd::splat(i32::MAX as i64);
+
+    let clamped_lo = sum_lo.simd_min(max).simd_max(min);
+    let clamped_hi = sum_hi.simd_min(max).simd_max(min);
+
+    i32x8::from_array([
+        clamped_lo[0] as i32, clamped_lo[1] as i32, clamped_lo[2] as i32, clamped_lo[3] as i32,
+        clamped_hi[0] as i32, clamped_hi[1] as i32, clamped_hi[2] as i32, clamped_hi[3] as i32,
+    ])
+}
+
+/// SIMD helper: saturating sub for i32x8
+#[inline]
+fn simd_saturating_sub(a: i32x8, b: i32x8) -> i32x8 {
+    let a_lo = i64x4::from_array([a[0] as i64, a[1] as i64, a[2] as i64, a[3] as i64]);
+    let a_hi = i64x4::from_array([a[4] as i64, a[5] as i64, a[6] as i64, a[7] as i64]);
+    let b_lo = i64x4::from_array([b[0] as i64, b[1] as i64, b[2] as i64, b[3] as i64]);
+    let b_hi = i64x4::from_array([b[4] as i64, b[5] as i64, b[6] as i64, b[7] as i64]);
+
+    let diff_lo = a_lo - b_lo;
+    let diff_hi = a_hi - b_hi;
+
+    let min = Simd::splat(i32::MIN as i64);
+    let max = Simd::splat(i32::MAX as i64);
+
+    let clamped_lo = diff_lo.simd_min(max).simd_max(min);
+    let clamped_hi = diff_hi.simd_min(max).simd_max(min);
+
+    i32x8::from_array([
+        clamped_lo[0] as i32, clamped_lo[1] as i32, clamped_lo[2] as i32, clamped_lo[3] as i32,
+        clamped_hi[0] as i32, clamped_hi[1] as i32, clamped_hi[2] as i32, clamped_hi[3] as i32,
+    ])
+}
+*/
+/// Vectorized radix-4 butterfly for forward FFT (alt_x1x3 = false).
+///
+/// Input layout:  [x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i]
+/// Output layout: [y0r, y0i, y2r, y2i, y1r, y1i, y3i, y3r]
+///
+/// This matches the scalar `radix4_butterfly` output ordering.
+#[inline]
+fn radix4_bfly_simd_fwd(x: i32x8) -> i32x8 {
+    // Extract components: x = [x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i]
+    //                          0     1     2     3     4     5     6     7
+unsafe {
+    // Stage 1: t0 = x0 + x2, t2 = x0 - x2, t1 = x1 + x3, t3 = x1 - x3
+    // Rearrange for parallel add/sub: [x0r, x0i, x1r, x1i, x0r, x0i, x1r, x1i]
+    let x_02_13 = simd_swizzle!(x, [0, 1, 2, 3, 0, 1, 2, 3]);
+    let x_24_36 = simd_swizzle!(x, [4, 5, 6, 7, 4, 5, 6, 7]);
+
+    // [t0r, t0i, t1r, t1i, t2r, t2i, t3r, t3i]
+    //  sum  sum  sum  sum  diff diff diff diff
+    let sums = simd_saturating_add(x_02_13, x_24_36);
+    let diffs = simd_saturating_sub(x_02_13, x_24_36);
+
+    // Combine: [t0r, t0i, t1r, t1i, t2r, t2i, t3r, t3i]
+    let t = simd_swizzle!(sums, diffs, [0, 1, 2, 3, 12, 13, 14, 15]);
+
+    // Stage 2: y0 = t0 + t1, y1 = t0 - t1
+    // [t0r, t0i, t0r, t0i, t2r, t2i, t2r, t2i]
+    let t_0022 = simd_swizzle!(t, [0, 1, 0, 1, 4, 5, 4, 5]);
+    // [t1r, t1i, t1r, t1i, t3r, t3i, t3r, t3i]
+    let t_1133 = simd_swizzle!(t, [2, 3, 2, 3, 6, 7, 6, 7]);
+
+    // [y0r, y0i, y1r, y1i, t2+t3r, t2+t3i, t2-t3r, t2-t3i]
+    let upper_sums = simd_saturating_add(t_0022, t_1133);
+    let upper_diffs = simd_saturating_sub(t_0022, t_1133);
+
+    // y0, y1 from upper_sums/upper_diffs
+    // y0 = sums[0,1], y1 = diffs[2,3]
+    let y01 = simd_swizzle!(upper_sums, upper_diffs, [0, 1, 10, 11, 4, 5, 6, 7]);
+
+    // Stage 3: Forward rotation - y2 = t2 + j*t3, y3 = t2 - j*t3
+    // j*t3 = (-t3i, t3r), so:
+    // y2r = t2r - t3i, y2i = t2i + t3r
+    // y3i = t2r + t3i (from y2r - 2*(-t3i) = y2r + 2*t3i... but cleaner to compute directly)
+    // y3r = t2i - t3r (swapped in output as y3i, y3r)
+
+    let t2r = t[4];
+    let t2i = t[5];
+    let t3r = t[6];
+    let t3i = t[7];
+
+    let y2r = t2r.saturating_add(t3i);  // forward: add
+    let y2i = t2i.saturating_sub(t3r);
+    let y3i = y2r.saturating_sub(t3i.saturating_mul(2)); // = t2r - t3i
+    let y3r = y2i.saturating_add(t3r.saturating_mul(2)); // = t2i + t3r
+
+    // Output: [y0r, y0i, y2r, y2i, y1r, y1i, y3i, y3r]
+    i32x8::from_array([y01[0], y01[1], y2r, y2i, y01[2], y01[3], y3i, y3r])
+}
+}
+
+/// Vectorized radix-4 butterfly for inverse FFT (alt_x1x3 = false).
+///
+/// Input layout:  [x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i]
+/// Output layout: [y0r, y0i, y2r, y2i, y1r, y1i, y3i, y3r]
+#[inline]
+fn radix4_bfly_simd_inv(x: i32x8) -> i32x8 {
+    unsafe {
+    // Stage 1: t0 = x0 + x2, t2 = x0 - x2, t1 = x1 + x3, t3 = x1 - x3
+    let x_02_13 = simd_swizzle!(x, [0, 1, 2, 3, 0, 1, 2, 3]);
+    let x_24_36 = simd_swizzle!(x, [4, 5, 6, 7, 4, 5, 6, 7]);
+
+    let sums = simd_saturating_add(x_02_13, x_24_36);
+    let diffs = simd_saturating_sub(x_02_13, x_24_36);
+
+    let t = simd_swizzle!(sums, diffs, [0, 1, 2, 3, 12, 13, 14, 15]);
+
+    // Stage 2: y0 = t0 + t1, y1 = t0 - t1
+    let t_0022 = simd_swizzle!(t, [0, 1, 0, 1, 4, 5, 4, 5]);
+    let t_1133 = simd_swizzle!(t, [2, 3, 2, 3, 6, 7, 6, 7]);
+
+    let upper_sums = simd_saturating_add(t_0022, t_1133);
+    let upper_diffs = simd_saturating_sub(t_0022, t_1133);
+
+    let y01 = simd_swizzle!(upper_sums, upper_diffs, [0, 1, 10, 11, 4, 5, 6, 7]);
+
+    // Stage 3: Inverse rotation - y2 = t2 - j*t3, y3 = t2 + j*t3
+    // -j*t3 = (t3i, -t3r), so:
+    // y2r = t2r + t3i... wait, that's wrong for inverse
+    // Let me recalculate from the scalar code:
+    // inverse: x2r = x2r - x3i, x2i = x2i + x3r
+    //          x3i = x2r + x3i*2 (= x2r_old - x3i + 2*x3i = x2r_old + x3i)
+    //          x3r = x2i - x3r*2 (= x2i_old + x3r - 2*x3r = x2i_old - x3r)
+
+    let t2r = t[4];
+    let t2i = t[5];
+    let t3r = t[6];
+    let t3i = t[7];
+
+    let y2r = t2r.saturating_sub(t3i);  // inverse: sub
+    let y2i = t2i.saturating_add(t3r);
+    let y3i = y2r.saturating_add(t3i.saturating_mul(2)); // = t2r + t3i
+    let y3r = y2i.saturating_sub(t3r.saturating_mul(2)); // = t2i - t3r
+
+    i32x8::from_array([y01[0], y01[1], y2r, y2i, y01[2], y01[3], y3i, y3r])
+    }
+}
+
+/// Dispatch to appropriate SIMD butterfly based on FFT direction.
+/// For alt_x1x3=true cases, falls back to scalar implementation.
+#[inline]
+fn radix4_butterfly_simd(
+    x: i32x8,       // [x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i]
+    alt_x1x3: bool, // Use scalar fallback if true (Range 4 only)
+    forward: bool,  // FFT direction
+) -> i32x8 {
+    if alt_x1x3 {
+        // Fallback to scalar for alt_x1x3 case (rare, Range 4 only)
+        let bfly = radix4_butterfly(
+            x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7],
+            true, forward,
+        );
+        i32x8::from_array(bfly)
+    } else if forward {
+        radix4_bfly_simd_fwd(x)
+    } else {
+        radix4_bfly_simd_inv(x)
+    }
 }
 
 // Twiddle multiplication types for different angle quadrants.
@@ -278,16 +462,20 @@ pub fn complex_fft_p2(
     let mut shift = if n % 2 == 0 { (n + 4) / 2 } else { (n + 3) / 2 };
 
     // Scale input into interleaved working buffer
-    let scale = 1i32 << shift;
     let mut ptr_x = [0i32; 1024]; // buffer on the stack!
-    for i in 0..npoints {
-        ptr_x[2 * i] = xr[i] / scale;
-        ptr_x[2 * i + 1] = xi[i] / scale;
-    }
+    {
+        let scale = Simd::splat(1i32 << shift);
+        let mut i = 0;
+        while i + 8 <= npoints {
+            let xr_vec = i32x8::from_slice(&xr[i..i + 8]);
+            let xi_vec = i32x8::from_slice(&xi[i..i + 8]);
 
-    // Next code works slower (15%), but buffer on the heap.
-    //let ptr_x: Vec<_> = xr.iter().zip(xi.iter()).
-    //        flat_map(|(a, b)| [a / scale, b / scale]).collect();
+            let (lo1, lo2) = xr_vec.interleave(xi_vec);
+            (lo1 / scale).copy_to_slice(&mut ptr_x[2*i .. 2*i + 8]);
+            (lo2 / scale).copy_to_slice(&mut ptr_x[2*i + 8 .. 2*i + 16]);
+            i += 8;
+        }
+    }
 
     let mut y = [0i32; 1024]; // buffer on the stack!
 
@@ -300,17 +488,17 @@ pub fn complex_fft_p2(
                 h2 = (h2 + 1) & !1;
             }
             let half = npoints >> 1;
-            let x0r = ptr_x[h2];
-            let x0i = ptr_x[h2 + 1];
-            let x1r = ptr_x[h2 + half];
-            let x1i = ptr_x[h2 + half + 1];
-            let x2r = ptr_x[h2 + 2 * half];
-            let x2i = ptr_x[h2 + 2 * half + 1];
-            let x3r = ptr_x[h2 + 3 * half];
-            let x3i = ptr_x[h2 + 3 * half + 1];
 
-            let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
-            y[yi..yi + 8].copy_from_slice(&bfly);
+            // Pack scattered inputs into SIMD vector
+            let x = i32x8::from_array([
+                ptr_x[h2],              ptr_x[h2 + 1],              // x0
+                ptr_x[h2 + half],       ptr_x[h2 + half + 1],       // x1
+                ptr_x[h2 + 2 * half],   ptr_x[h2 + 2 * half + 1],   // x2
+                ptr_x[h2 + 3 * half],   ptr_x[h2 + 3 * half + 1],   // x3
+            ]);
+
+            let bfly = radix4_butterfly_simd(x, false, forward);
+            bfly.copy_to_slice(&mut y[yi..yi + 8]);
             yi += 8;
         }
     }
@@ -328,18 +516,19 @@ pub fn complex_fft_p2(
         // Range 0: no twiddles (j=0)
         {
             let mut base = 0usize;
+            let stride = del << 1;
             for _ in 0..in_loop_cnt {
-                let stride = del << 1;
-                let x0r = y[base];
-                let x0i = y[base + 1];
-                let x1r = y[base + stride];
-                let x1i = y[base + stride + 1];
-                let x2r = y[base + 2 * stride];
-                let x2i = y[base + 2 * stride + 1];
-                let x3r = y[base + 3 * stride];
-                let x3i = y[base + 3 * stride + 1];
+                // Pack strided inputs into SIMD vector
+                let x = i32x8::from_array([
+                    y[base],               y[base + 1],               // x0
+                    y[base + stride],      y[base + stride + 1],      // x1
+                    y[base + 2 * stride],  y[base + 2 * stride + 1],  // x2
+                    y[base + 3 * stride],  y[base + 3 * stride + 1],  // x3
+                ]);
 
-                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                let bfly = radix4_butterfly_simd(x, false, forward);
+
+                // Scatter outputs back to strided positions
                 y[base] = bfly[0];
                 y[base + 1] = bfly[1];
                 y[base + stride] = bfly[2];
@@ -360,6 +549,7 @@ pub fn complex_fft_p2(
         // Range 1: standard twiddles
         let mut col = 1usize; // column offset in interleaved y
         let mut j = nodespacing;
+        let stride = del << 1;
         while j <= sec_loop_cnt {
             let w1h = twiddles[2 * j];
             let w1l = twiddles[2 * j + 1];
@@ -370,14 +560,15 @@ pub fn complex_fft_p2(
 
             let mut base = col * 2;
             for _k in 0..in_loop_cnt {
-                let stride = del << 1;
                 let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
                 let (x2r, x2i) = tw_apply(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
                 let (x3r, x3i) = tw_apply(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
-                let x0r = y[base];
-                let x0i = y[base + 1];
 
-                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                let x = i32x8::from_array([
+                    y[base], y[base + 1], x1r, x1i, x2r, x2i, x3r, x3i
+                ]);
+                let bfly = radix4_butterfly_simd(x, false, forward);
+
                 y[base] = bfly[0];
                 y[base + 1] = bfly[1];
                 y[base + stride] = bfly[2];
@@ -403,14 +594,15 @@ pub fn complex_fft_p2(
 
             let mut base = col * 2;
             for _k in 0..in_loop_cnt {
-                let stride = del << 1;
                 let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
                 let (x2r, x2i) = tw_apply(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
                 let (x3r, x3i) = tw_apply_wrap(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
-                let x0r = y[base];
-                let x0i = y[base + 1];
 
-                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                let x = i32x8::from_array([
+                    y[base], y[base + 1], x1r, x1i, x2r, x2i, x3r, x3i
+                ]);
+                let bfly = radix4_butterfly_simd(x, false, forward);
+
                 y[base] = bfly[0];
                 y[base + 1] = bfly[1];
                 y[base + stride] = bfly[2];
@@ -436,14 +628,15 @@ pub fn complex_fft_p2(
 
             let mut base = col * 2;
             for _k in 0..in_loop_cnt {
-                let stride = del << 1;
                 let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
                 let (x2r, x2i) = tw_apply_wrap(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
                 let (x3r, x3i) = tw_apply_wrap(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
-                let x0r = y[base];
-                let x0i = y[base + 1];
 
-                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, false, forward);
+                let x = i32x8::from_array([
+                    y[base], y[base + 1], x1r, x1i, x2r, x2i, x3r, x3i
+                ]);
+                let bfly = radix4_butterfly_simd(x, false, forward);
+
                 y[base] = bfly[0];
                 y[base + 1] = bfly[1];
                 y[base + stride] = bfly[2];
@@ -469,14 +662,16 @@ pub fn complex_fft_p2(
 
             let mut base = col * 2;
             for _k in 0..in_loop_cnt {
-                let stride = del << 1;
                 let (x1r, x1i) = tw_apply(y[base + stride], y[base + stride + 1], w1h, w1l);
                 let (x2r, x2i) = tw_apply_wrap(y[base + 2 * stride], y[base + 2 * stride + 1], w2h, w2l);
                 let (x3r, x3i) = tw_apply_wrap2(y[base + 3 * stride], y[base + 3 * stride + 1], w3h, w3l);
-                let x0r = y[base];
-                let x0i = y[base + 1];
 
-                let bfly = radix4_butterfly(x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i, true, forward);
+                // Range 4 uses alt_x1x3=true, falls back to scalar in radix4_butterfly_simd
+                let x = i32x8::from_array([
+                    y[base], y[base + 1], x1r, x1i, x2r, x2i, x3r, x3i
+                ]);
+                let bfly = radix4_butterfly_simd(x, true, forward);
+
                 y[base] = bfly[0];
                 y[base + 1] = bfly[1];
                 y[base + stride] = bfly[2];
@@ -554,7 +749,43 @@ pub fn complex_fft_p2(
 
     shift as i32 - preshift
 }
+/*
+fn radix4_butterfly_x2(
+    x0: i32x8,  // [x0r_a, x0i_a, x0r_b, x0i_b, ...]
+    x1: i32x8,
+    x2: i32x8,
+    x3: i32x8,
+    forward: bool,
+) -> (i32x8, i32x8, i32x8, i32x8) {
+    // Stage 1: x0 +/- x2, x1 +/- x3
+    let t0 = x0.saturating_add(x2);
+    let t2 = x0.saturating_sub(x2);
+    let t1 = x1.saturating_add(x3);
+    let t3 = x1.saturating_sub(x3);
 
+    // Stage 2: combine with rotation for x3
+    let y0 = t0.saturating_add(t1);
+    let y1 = t0.saturating_sub(t1);
+
+    // Rotation for t3: swap real/imag and negate appropriately
+    let t3_rot = if forward {
+        // j * t3 = (-t3i, t3r)
+        let t3_swapped = simd_swizzle!(t3, [1, 0, 3, 2, 5, 4, 7, 6]);
+        let signs = i32x8::from_array([-1, 1, -1, 1, -1, 1, -1, 1]);
+        t3_swapped * signs
+    } else {
+        // -j * t3 = (t3i, -t3r)
+        let t3_swapped = simd_swizzle!(t3, [1, 0, 3, 2, 5, 4, 7, 6]);
+        let signs = i32x8::from_array([1, -1, 1, -1, 1, -1, 1, -1]);
+        t3_swapped * signs
+    };
+
+    let y2 = t2.saturating_add(t3_rot);
+    let y3 = t2.saturating_sub(t3_rot);
+
+    (y0, y2, y1, y3)
+}
+*/
 /// Radix-3 DFT butterfly for mixed-radix FFT.
 ///
 /// Implements the 3-point DFT kernel used in mixed-radix FFT for lengths
