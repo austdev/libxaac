@@ -28,7 +28,7 @@ include_directories(${LIBXAACDEC_INCLUDES})
 libxaac_add_executable(xaacdec libxaacdec SOURCES ${XAACDEC_SRCS} INCLUDES
                        ${LIBXAACDEC_INCLUDES})
 
-if(NOT RC_FALLBACK)
+if(NOT LEGACY_BUILD)
     target_link_libraries(xaacdec librustdec)
     if(WIN32)
         target_link_libraries(xaacdec kernel32 ws2_32 ntdll userenv dbghelp)
@@ -45,7 +45,7 @@ endif()
 target_compile_definitions(xaacdec PRIVATE
     DRC_ENABLE MULTICHANNEL_ENABLE ECLIPSE LOUDNESS_LEVELING_SUPPORT
     WIN32 # TODO: fix WIN32 diverging from _WIN32
-    $<$<C_COMPILER_FRONTEND_VARIANT:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+    $<$<OR:$<C_COMPILER_ID:MSVC>,$<STREQUAL:${CMAKE_C_SIMULATE_ID},MSVC>>:_CRT_SECURE_NO_WARNINGS>)
 
 target_compile_options(xaacdec PRIVATE
     $<$<C_COMPILER_FRONTEND_VARIANT:MSVC>:/UARM_PROFILE_HW;/UARM_PROFILE_BOARD>

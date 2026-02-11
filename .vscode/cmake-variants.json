@@ -15,22 +15,22 @@
       }
     }
   },
-  "fallback": {
-    "default": "disabled",
-    "description": "Reference build based on the original source code",
+  "legacy_build": {
+    "default": "Legacy",
+    "description": "Legacy build based on the original source code",
     "choices": {
-      "enabled": {
-        "short": "Reference",
+      "Legacy": {
+        "short": "Legacy",
         "long": "Use an original source code",
         "settings": {
-          "RC_FALLBACK": "ON"
+          "LEGACY_BUILD": "ON"
         }
       },
-      "disabled": {
+      "Migration": {
         "short": "Migration",
         "long": "Use new code migrated on Rust",
         "settings": {
-          "RC_FALLBACK": "OFF"
+          "LEGACY_BUILD": "OFF"
         }
       }
     }
