@@ -22,6 +22,7 @@ testdata = "0.1"
 
 [build-dependencies]
 bindgen = "0.72"
+cmake = "0.1.57"
 
 [[bench]]
 name = "windowing_bench"

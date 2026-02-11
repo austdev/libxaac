@@ -1,0 +1,114 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows",
+      "hidden": true,
+      "displayName": "Windows",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "inherits": "windows",
+      "displayName": "Windows MSVC",
+      "generator": "Visual Studio 17 2022",
+      "toolchainFile": "cmake/toolchains/native/windows-msvc.cmake"
+    },
+    {
+      "name": "windows-msvc-legacy-debug",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Legacy Debug",
+      "binaryDir": "${sourceDir}/build/windows-msvc-legacy-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "RC_FALLBACK": "ON"
+      }
+    },
+    {
+      "name": "windows-msvc-legacy-release",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Legacy Release",
+      "binaryDir": "${sourceDir}/build/windows-msvc-legacy-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RC_FALLBACK": "ON"
+      }
+    },
+    {
+      "name": "windows-msvc-migration-debug",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Migration Debug",
+      "binaryDir": "${sourceDir}/build/windows-msvc-migration-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "RC_FALLBACK": "OFF"
+      }
+    },
+    {
+      "name": "windows-msvc-migration-release",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Migration Release",
+      "binaryDir": "${sourceDir}/build/windows-msvc-migration-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RC_FALLBACK": "OFF"
+      }
+    },
+    {
+      "name": "windows-llvm",
+      "inherits": "windows",
+      "displayName": "Windows LLVM",
+      "generator": "Visual Studio 17 2022",
+      "toolchainFile": "cmake/toolchains/native/windows-llvm.cmake"
+    },
+    {
+      "name": "windows-llvm-legacy-debug",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Legacy Debug",
+      "binaryDir": "${sourceDir}/build/windows-llvm-legacy-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "RC_FALLBACK": "ON"
+      }
+    },
+    {
+      "name": "windows-llvm-legacy-release",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Legacy Release",
+      "binaryDir": "${sourceDir}/build/windows-llvm-legacy-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RC_FALLBACK": "ON"
+      }
+    },
+    {
+      "name": "windows-llvm-migration-debug",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Migration Debug",
+      "binaryDir": "${sourceDir}/build/windows-llvm-migration-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "RC_FALLBACK": "OFF"
+      }
+    },
+    {
+      "name": "windows-llvm-migration-release",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Migration Release",
+      "binaryDir": "${sourceDir}/build/windows-llvm-migration-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RC_FALLBACK": "OFF"
+      }
+    }
+  ]
+}
