@@ -1,13 +1,11 @@
 fn main() {
-    // Configuration type:
-    let legacy = std::env::var("CARGO_FEATURE_LEGACY_BUILD").is_ok();
-
-    if legacy {
+    if cfg!(feature = "legacy-build") {
         println!("cargo::rerun-if-env-changed=CMAKE_TOOLCHAIN_FILE");
 
         let mut cmake_cfg = cmake::Config::new("..");
 
         cmake_cfg.build_target("libxaacdec");
+        cmake_cfg.define("LEGACY_BUILD", "ON");
 
         if let Some(toolchain_file) = option_env!("CMAKE_TOOLCHAIN_FILE") {
             cmake_cfg.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
@@ -27,7 +25,7 @@ fn main() {
             "cargo::rustc-link-search=native={}/build",
             out_path.display()
         );
-        println!("cargo::rustc-link-lib=static=xaacdec-ref");
+        println!("cargo::rustc-link-lib=static=xaacdec-legacy");
     } else {
         todo!("Linking to Rust lib not yet implemented");
     }

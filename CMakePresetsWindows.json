@@ -29,7 +29,7 @@
       "displayName": "Windows MSVC Legacy",
       "binaryDir": "${sourceDir}/build/windows-msvc-legacy",
       "cacheVariables": {
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -38,7 +38,7 @@
       "displayName": "Windows MSVC Migration",
       "binaryDir": "${sourceDir}/build/windows-msvc-migration",
       "cacheVariables": {
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     },
     {
@@ -54,7 +54,7 @@
       "displayName": "Windows LLVM Legacy",
       "binaryDir": "${sourceDir}/build/windows-llvm-legacy",
       "cacheVariables": {
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -63,7 +63,7 @@
       "displayName": "Windows LLVM Migration",
       "binaryDir": "${sourceDir}/build/windows-llvm-migration",
       "cacheVariables": {
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     }
   ],

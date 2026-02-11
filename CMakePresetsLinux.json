@@ -30,7 +30,7 @@
       "binaryDir": "${sourceDir}/build/linux-gcc-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -40,7 +40,7 @@
       "binaryDir": "${sourceDir}/build/linux-gcc-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -50,7 +50,7 @@
       "binaryDir": "${sourceDir}/build/linux-gcc-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     },
     {
@@ -60,7 +60,7 @@
       "binaryDir": "${sourceDir}/build/linux-gcc-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     },
     {
@@ -76,7 +76,7 @@
       "binaryDir": "${sourceDir}/build/linux-clang-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -86,7 +86,7 @@
       "binaryDir": "${sourceDir}/build/linux-clang-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "RC_FALLBACK": "ON"
+        "LEGACY_BUILD": "ON"
       }
     },
     {
@@ -96,7 +96,7 @@
       "binaryDir": "${sourceDir}/build/linux-clang-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     },
     {
@@ -106,7 +106,7 @@
       "binaryDir": "${sourceDir}/build/linux-clang-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "RC_FALLBACK": "OFF"
+        "LEGACY_BUILD": "OFF"
       }
     }
   ]

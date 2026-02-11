@@ -7,7 +7,7 @@ fn main() {
         let mut cmake_cfg = cmake::Config::new("..");
 
         cmake_cfg.build_target("libxaacdec");
-        cmake_cfg.define("RC_FALLBACK", "ON");
+        cmake_cfg.define("LEGACY_BUILD", "ON");
 
         if let Some(toolchain_file) = option_env!("CMAKE_TOOLCHAIN_FILE") {
             cmake_cfg.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);

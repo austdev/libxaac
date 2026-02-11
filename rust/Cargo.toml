@@ -1,6 +1,5 @@
 [workspace]
-members = [
-]
+members = []
 [package]
 name = "rust"
 authors = ["C2Rust"]
@@ -18,7 +17,8 @@ path = "src/test/decoder/ixheaacd_main.rs"
 name = "ixheaacd_main_rust"
 
 [features]
-legacy-build = [] # TODO: leverage for linking to C vs. Rust lib when both work
+default = ["legacy-build"]
+legacy-build = []          # TODO: leverage for linking to C vs. Rust lib when both work
 
 [dependencies]
 
