@@ -11,7 +11,7 @@ const ADJ_SCALE: i32 = 11;
 // ============================================================================
 
 /// Extension trait for fixed-point DSP operations on i32
-#[cfg(not(feature = "fallback"))]
+#[cfg(not(feature = "legacy-build"))]
 trait FixedPointOps {
     /// Q31 fixed-point multiply: (a * b) >> 31
     fn mult_shift_q31(self, other: Self) -> Self;
@@ -19,7 +19,7 @@ trait FixedPointOps {
     fn saturating_shl(self, shift: u32) -> Self;
 }
 
-#[cfg(not(feature = "fallback"))]
+#[cfg(not(feature = "legacy-build"))]
 impl FixedPointOps for i32 {
     #[inline]
     fn mult_shift_q31(self, other: Self) -> Self {
@@ -61,9 +61,9 @@ impl FixedPointOps for i32 {
         }
     }
 
-     /// Create from C struct 
+     /// Create from C struct
     pub unsafe fn from_c_struct(c: *const crate::gen_ixheaacd_ref::offset_lengths) -> Self {
-        unsafe { 
+        unsafe {
             Self {
                 lfac: (*c).lfac as usize,
                 n_flat_ls: (*c).n_flat_ls as usize,
@@ -104,7 +104,7 @@ pub fn combine_fac(
     assert_eq!(src1.len(), src2.len(), "src1 and src2 must have same length");
     assert_eq!(src1.len(), dest.len(), "src1 and dest must have same length");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_combine_fac(
             src1.as_ptr() as *mut i32,
@@ -116,7 +116,7 @@ pub fn combine_fac(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         if shift2 > shift1 {
             // Right-shift src2 before adding
@@ -165,7 +165,7 @@ pub fn windowing_long1(
     assert_eq!(win_fwd.len(), vlen, "win_fwd must have at least vlen/2 samples");
     assert_eq!(win_rev.len(), vlen, "win_rev must have at least vlen/2 samples");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let win_rev = win_rev.as_ptr().add(win_rev.len() - 1);
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long1(
@@ -180,7 +180,7 @@ pub fn windowing_long1(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = vlen / 2;
 
@@ -249,7 +249,7 @@ pub fn windowing_long2(
     assert!(over_lap.len() >= lfac + n_flat_ls, "overlap buffer too small");
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         return crate::gen_ixheaacd_ref::ixheaacd_windowing_long2(
@@ -265,7 +265,7 @@ pub fn windowing_long2(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         // Region boundaries
         let region1_end = n_flat_ls + lfac;
@@ -415,7 +415,7 @@ pub fn windowing_long3(
     assert!(win_fwd.len() >= n_trans_ls, "win_fwd too small");
     assert!(win_rev.len() >= n_trans_ls, "win_rev too small");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         let win_rev = win_rev.as_ptr().add(n_trans_ls - 1);
@@ -431,7 +431,7 @@ pub fn windowing_long3(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         // Region boundaries
         let half = n_long / 2;
@@ -531,7 +531,7 @@ pub fn windowing_short1(
     assert_eq!(src2.len(), n_short, "src2 must have n_short samples");
     assert!(fp.len() >= n_flat_ls + lfac, "fp must have at least n_flat_ls + lfac samples");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short1(
@@ -544,7 +544,7 @@ pub fn windowing_short1(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         if shift_olap > shiftp {
             let shift = (shift_olap - shiftp) as u32;
@@ -608,7 +608,7 @@ pub fn windowing_short2(
     assert!(win_fwd.len() >= n_short, "win_fwd must have at least n_short samples");
     assert!(fp.len() >= n_flat_ls + n_short, "fp must have at least n_flat_ls + n_short samples");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let mut ixheaacd_drc_offset = offset.as_c_struct();
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short2(
@@ -621,14 +621,14 @@ pub fn windowing_short2(
         );
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
         if shift_olap > shiftp {
             let shift = (shift_olap - shiftp) as u32;
             assert!(shift < 32, "wrong Q-format parameters");
-            
+
             for i in 0..half {
                 let mirror = n_short - i - 1;
                 let win_fwd_i = win_fwd[i];
@@ -685,7 +685,7 @@ pub fn windowing_short3(
     assert_eq!(n_short, win_fwd.len(), "forward window must have same length");
     assert_eq!(n_short, fp.len(), "overlap buffer must have same length");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let win_rev = win_fwd.as_ptr().add(n_short - 1);
         crate::gen_ixheaacd_ref::ixheaacd_windowing_short3(
@@ -698,7 +698,7 @@ pub fn windowing_short3(
         )
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
@@ -738,31 +738,31 @@ pub fn windowing_short3(
 ///  EIGHT_SHORT_SEQUENCE mode, ensuring smooth transitions between consecutive audio frames.
 ///
 /// # Algorithm
-/// 
+///
 /// if (shift_olap > output_q):
 ///   Scale DOWN overlap buffer to match output_q
 ///   return output_q
 /// else:
 ///    Scale DOWN output to match shift_olap
 ///    return shift_olap
-/// 
+///
 /// **Stage 1: First Half Windowing** `[0 .. n_short/2)`
-/// 
+///
 /// - Reads second half of src1: `src1[n_short/2 + i]`
 /// - Applies forward/reverse windows
 /// - Updates first half and mirror positions of `fp`
 /// - `fp[i] = src1[n_short/2 + i] * win_fwd[i] + fp[i]` (Q-aligned)
-/// 
+///
 /// **Stage 2: Second Half Processing** `[n_short/2 .. n_short)` - Controlled by `windowed_flag`
-/// 
+///
 /// **If `windowed_flag == true`:**
 /// - Applies backward window using `win_fwd1` (reverse coefficients)
 /// - `fp[i + n_short/2] = -src1[n_short - i - 1] * win_fwd1 + fp[i + n_short/2]`
-/// 
+///
 /// **If `windowed_flag == false`:**
 /// - Direct negated copy without windowing
 /// - `fp[i + n_short/2] = -src1[n_short - i - 1] + fp[i + n_short/2]`
-/// 
+///
 /// # C signature
 /// ```c
 /// WORD8 ixheaacd_windowing_short4(WORD32 *src1, WORD32 *win_fwd, WORD32 *fp,
@@ -786,7 +786,7 @@ pub fn windowing_short4(
     assert_eq!(n_short * 2, fp.len(), "overlap buffer must have double length");
     assert!(shiftp >= output_q, "output_q must be min(shiftp, shift_olap)");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         let src1 = src1.as_ptr();
         let win_fwd = win_fwd.as_ptr();
@@ -801,7 +801,7 @@ pub fn windowing_short4(
             shiftp, shift_olap, output_q)
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     {
         let half = n_short / 2;
 
@@ -898,16 +898,16 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
 
-    #[cfg(feature = "fallback")]
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_scale_down(
-            dest.as_mut_ptr(), 
-            src.as_ptr() as *mut i32, 
-            src.len() as i32, 
+            dest.as_mut_ptr(),
+            src.as_ptr() as *mut i32,
+            src.len() as i32,
             shift1, shift2);
     }
 
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
@@ -932,16 +932,16 @@ pub fn scale_down(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 pub fn scale_down_adj(dest: &mut [i32], src: &[i32], shift1: i8, shift2: i8)
 {
     assert_eq!(dest.len(), src.len(), "dest and src must have same length");
-    
-    #[cfg(feature = "fallback")]
+
+    #[cfg(feature = "legacy-build")]
     unsafe {
         crate::gen_ixheaacd_ref::ixheaacd_scale_down_adj(
-            dest.as_mut_ptr(), 
-            src.as_ptr() as *mut i32, 
-            src.len() as i32, 
+            dest.as_mut_ptr(),
+            src.as_ptr() as *mut i32,
+            src.len() as i32,
             shift1, shift2);
     }
-    #[cfg(not(feature = "fallback"))]
+    #[cfg(not(feature = "legacy-build"))]
     if shift1 > shift2 {
         let shift = (shift1 - shift2) as u32;
         for (d, s) in dest.iter_mut().zip(src.iter()) {
@@ -975,7 +975,7 @@ mod tests {
     // Helper function to create simple sine-like window coefficients
     fn create_test_window_len32() -> Vec<i32> {
         vec![
-              13176960,  118530360,  223600288,  328129056,  431869696,  534568800,  635979456,  735858880, 
+              13176960,  118530360,  223600288,  328129056,  431869696,  534568800,  635979456,  735858880,
              833964544,  930062272, 1023918080, 1115308543, 1204012415, 1289815167, 1372508287, 1451898623,
             1527788543, 1599999871, 1668354303, 1732692863, 1792854655, 1848697855, 1900087039, 1946900095,
             1989020799, 2026350591, 2058798975, 2086288895, 2108751615, 2126133375, 2138393343, 2145503615]
@@ -1050,7 +1050,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let mut dest = vec![0; win_fwd.len()];
 
-        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd,
                     &mut dest, 16, 14);
 
         let exp = vec![-2145568044, 17234646, -29172329, 38, 485751935, -94, 1078072583, 1389306411, 208445805, 8738680, -860866994, -1252294511, 33888315, -112910168, -356550901, 12646, -28409246, 770415488, -599349339, -449, -520, -34, 379625710, -486763859, 735882034, -206775164, 51, 241, 517, 241342993, -301815991, 10490778];
@@ -1072,7 +1072,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let mut dest = vec![0; win_fwd.len()];
 
-        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd,
                     &mut dest, 14, 16);
 
         let exp = vec![-536633617, 68191762, -112105718, 152, 121437794, -14, 512882981, 347294477, 833953210, 2184466, -215216637, -313073629, 8474706, -160307662, -29219853, 50698, -7152335, 122754684, 21006085, -3895, -130, -211, 94906842, -1946909804, 184057339, -827100097, -26, 970, -791, 1056960767, -1227962086, 41961389];
@@ -1094,7 +1094,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let mut dest = vec![0; win_fwd.len()];
 
-        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd,
                     &mut dest, 14, 14);
 
         let exp = vec![-2145761328, 68341127, -113022437, 152, 485751784, -86, 1272764452, 1389280711, 833919213, 8738518, -860866904, -1252294511, 33890418, -218574263, -308616603, 50676, -28449264, 714536138, -462674603, -3475, -520, -196, 379626042, -1946938930, 735951499, -827100208, 21, 970, -218, 1038643009, -1223822461, 41961734];
@@ -1116,7 +1116,7 @@ mod tests {
         let win_fwd = create_test_window_len32();
         let mut dest = vec![0; win_fwd.len()];
 
-        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd, 
+        let result_q = windowing_long1(&src1, &src2, &win_fwd, &win_fwd,
                     &mut dest, 18, 12);
 
         let exp = vec![-2145507642, 1263871, -2969171, 2, 485751982, -96, 1017231374, 1389314442, 12985365, 8738731, -860867022, -1252294511, 33887658, -79890138, -371530369, 762, -28396740, 787877784, -642060194, 496, -520, 16, 379625606, -30459149, 735860326, -12923588, 61, 14, 747, -7813262, -13688969, 656104];
@@ -1138,7 +1138,7 @@ mod tests {
     fn create_test_offset_long2() -> OffsetLengths {
         // Proportionally reduced: n_long=64, lfac=8, n_flat_ls=16, n_trans_ls=16
         OffsetLengths {
-            lfac: 8, 
+            lfac: 8,
             n_flat_ls: 24,
             n_trans_ls: 16,
             n_long: 64,
@@ -1723,12 +1723,12 @@ mod tests {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![21309976; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 15, 14, 12
         );
-        
+
         let exp = vec![21406486, 24550711, 24947048, 31450916, 39580295, 34812973, 5687590, -7326831, -1142815, 8776529, -1200578, 5631369, -22044439, -25357873, 257511605, 6010677, -3607019, -15856645, -12982730, -372737, 5636058, 78508637, 909869, 5159004];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 12);
@@ -1743,12 +1743,12 @@ mod tests {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![4352798; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             false, 17, 16, 14
         );
-        
+
         let exp = vec![4449308, 7593533, 7989870, 14493738, 22623117, 17855795, -11269588, -24284009, -18099993, -8180649, -18157756, -11325809, -26371055, -30318645, 269523654, 1860335, -9887375, -27992357, -27992357, -9887375, 1860335, 269523654, -30318645, -26371055];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 14);
@@ -1763,12 +1763,12 @@ mod tests {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![-6177088; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 16, 14, 15
         );
-        
+
         let exp = vec![-2895523, 3392927, 4185601, 17193337, 33452094, 23917451, -37421860, -63450702, -51082669, -31243982, -51198195, -37534302, -60920954, -67547821, 498191135, -4810721, -24046113, -48545365, -42797536, -17577549, -5559960, 140185199, -15012337, -6514068];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 14, "Should return shift_olap");
@@ -1783,12 +1783,12 @@ mod tests {
         let src1: Vec<i32> = vec![232644448, 87804592, -6177088, -2147483648, 251254752, 219674032, 125828992, 184318592, 106729056, 203009648, 281430368, 171565216];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![162292782; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             false, 14, 12, 14
         );
-        
+
         let exp = vec![40766216, 47054666, 47847340, 60855076, 77113833, 67579190, 131048010, 105019168, 117387201, 137225888, 117271675, 130935568, 107374274, 99479094, 699163693, 163837054, 140341634, 104131670, 104131670, 140341634, 163837054, 699163693, 99479094, 107374274];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 12);
@@ -1804,12 +1804,12 @@ mod tests {
         let src1 = vec![1000; 12];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 17, 15, 15
         );
-        
+
         let exp = vec![101, 135, 168, 199, 229, 257, -83, -104, -122, -135, -145, -150, -150, -145, -135, -122, -104, -83, -58, -30, 0, 31, 64, 98];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 15);
@@ -1820,12 +1820,12 @@ mod tests {
         let src1 = vec![0; 12];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 18, 16, 14
         );
-        
+
         let exp = vec![100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 14);
@@ -1836,12 +1836,12 @@ mod tests {
         let src1 = vec![1000; 12];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![0; 2 * src1.len()];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 17, 16, 14
         );
-        
+
         let exp = vec![0, 17, 34, 49, 64, 78, -92, -102, -111, -118, -123, -125, -125, -123, -118, -111, -102, -92, -79, -65, -50, -35, -18, -1];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 14);
@@ -1852,13 +1852,13 @@ mod tests {
         let src1 = vec![1000; 12];
         let win_fwd = create_test_window_len12();
         let mut fp = vec![100; 2 * src1.len()];
-        
+
         // Large shift difference: shift_olap - output_q = 8
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_fwd,
             true, 21, 20, 12
         );
-        
+
         let exp = vec![100, 100, 100, 100, 101, 101, 98, 98, 98, 98, 98, 98, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1, -1];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 12);
@@ -1871,12 +1871,12 @@ mod tests {
         let win_fwd = vec![i32::MAX / 4; n_short];
         let win_rev1 = vec![i32::MAX / 4; n_short];
         let mut fp = vec![1000; 2 * n_short];
-        
+
         let result_q = windowing_short4(
             &src1, &win_fwd, &mut fp, &win_rev1,
             true, 12, 16, 12
         );
-        
+
         let exp = vec![268436455, 268436455, 268436455, 268436455, 268436455, 268436455, 268436455, 268436455, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268434456, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394, -268435394];
         assert_eq!(fp, exp);
         assert_eq!(result_q, 12);
@@ -1891,9 +1891,9 @@ mod tests {
         // Test length 8 (exactly 8, SIMD boundary for AVX2)
         let src = vec![8000, 16000, 24000, 32000, 40000, 48000, 56000, 64000];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 5, 2); // Right shift by 3
-        
+
         assert_eq!(dest, vec![1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000]);
     }
 
@@ -1906,9 +1906,9 @@ mod tests {
             136000, 144000
         ];
         let mut dest = vec![0; 18];
-        
+
         scale_down(&mut dest, &src, 5, 2); // Right shift by 3
-        
+
         assert_eq!(dest, vec![
             1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000,
             9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000,
@@ -1921,9 +1921,9 @@ mod tests {
         // Test with negative values (arithmetic right shift preserves sign)
         let src = vec![-8000, -16000, 24000, -32000, 40000, -48000, 56000, -64000];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 5, 2); // Right shift by 3
-        
+
         assert_eq!(dest, vec![-1000, -2000, 3000, -4000, 5000, -6000, 7000, -8000]);
     }
 
@@ -1935,9 +1935,9 @@ mod tests {
     fn test_scale_down_left_shift_len7() {
         let src = vec![1000, 2000, 3000, 4000, 5000, 6000, 7000];
         let mut dest = vec![0; 7];
-        
+
         scale_down(&mut dest, &src, 2, 5); // Left shift by 3
-        
+
         assert_eq!(dest, vec![8000, 16000, 24000, 32000, 40000, 48000, 56000]);
     }
 
@@ -1948,9 +1948,9 @@ mod tests {
             9000, 10000, 11000, 12000, 13000, 14000, 15000
         ];
         let mut dest = vec![0; 15];
-        
+
         scale_down(&mut dest, &src, 2, 5); // Left shift by 3
-        
+
         assert_eq!(dest, vec![
             8000, 16000, 24000, 32000, 40000, 48000, 56000, 64000,
             72000, 80000, 88000, 96000, 104000, 112000, 120000
@@ -1961,9 +1961,9 @@ mod tests {
     fn test_scale_down_left_shift_negative_values() {
         let src = vec![-1000, -2000, 3000, -4000, 5000, -6000, 7000, -8000];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 2, 5); // Left shift by 3
-        
+
         assert_eq!(dest, vec![-8000, -16000, 24000, -32000, 40000, -48000, 56000, -64000]);
     }
 
@@ -1975,9 +1975,9 @@ mod tests {
     fn test_scale_down_saturation_max_len1() {
         let src = vec![i32::MAX / 2];
         let mut dest = vec![0];
-        
+
         scale_down(&mut dest, &src, 0, 2); // Left shift by 2 would overflow
-        
+
         assert_eq!(dest, vec![i32::MAX]);
     }
 
@@ -1985,9 +1985,9 @@ mod tests {
     fn test_scale_down_saturation_min_len1() {
         let src = vec![i32::MIN / 2];
         let mut dest = vec![0];
-        
+
         scale_down(&mut dest, &src, 0, 2); // Left shift by 2 would overflow
-        
+
         assert_eq!(dest, vec![i32::MIN]);
     }
 
@@ -2001,9 +2001,9 @@ mod tests {
             i32::MAX / 16, 4000, i32::MIN / 16, -4000
         ];
         let mut dest = vec![0; 16];
-        
+
         scale_down(&mut dest, &src, 0, 2); // Left shift by 2
-        
+
         assert_eq!(dest, vec![
             i32::MAX, 4000, i32::MIN, -4000,
             i32::MAX / 4 << 2, 8000, i32::MIN / 4 << 2, -8000,
@@ -2017,9 +2017,9 @@ mod tests {
         // All values saturate to MAX
         let src = vec![i32::MAX / 2; 8];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 0, 2);
-        
+
         assert_eq!(dest, vec![i32::MAX; 8]);
     }
 
@@ -2028,9 +2028,9 @@ mod tests {
         // All values saturate to MIN
         let src = vec![i32::MIN / 2; 8];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 0, 2);
-        
+
         assert_eq!(dest, vec![i32::MIN; 8]);
     }
 
@@ -2042,9 +2042,9 @@ mod tests {
     fn test_scale_down_no_change_len1() {
         let src = vec![1000];
         let mut dest = vec![0];
-        
+
         scale_down(&mut dest, &src, 5, 5);
-        
+
         assert_eq!(dest, src);
     }
 
@@ -2055,9 +2055,9 @@ mod tests {
             9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000
         ];
         let mut dest = vec![0; 16];
-        
+
         scale_down(&mut dest, &src, 5, 5);
-        
+
         assert_eq!(dest, src);
     }
 
@@ -2069,9 +2069,9 @@ mod tests {
     fn test_scale_down_zero_values_len8() {
         let src = vec![0; 8];
         let mut dest = vec![42; 8]; // Pre-filled with non-zero
-        
+
         scale_down(&mut dest, &src, 3, 7); // Left shift by 4
-        
+
         assert_eq!(dest, vec![0; 8]);
     }
 
@@ -2079,9 +2079,9 @@ mod tests {
     fn test_scale_down_single_bit_shift_len8() {
         let src = vec![100, 200, 300, 400, 500, 600, 700, 800];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 5, 6); // Left shift by 1
-        
+
         assert_eq!(dest, vec![200, 400, 600, 800, 1000, 1200, 1400, 1600]);
     }
 
@@ -2089,9 +2089,9 @@ mod tests {
     fn test_scale_down_large_right_shift_len8() {
         let src = vec![1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000];
         let mut dest = vec![0; 8];
-        
+
         scale_down(&mut dest, &src, 10, 0); // Right shift by 10
-        
+
         assert_eq!(dest, vec![976, 1953, 2929, 3906, 4882, 5859, 6835, 7812]);
     }
 
@@ -2103,9 +2103,9 @@ mod tests {
     fn test_scale_down_adj_no_shift_len1() {
         let src = vec![1000];
         let mut dest = vec![0];
-        
+
         scale_down_adj(&mut dest, &src, 0, 0); // No shift, just adjustment
-        
+
         assert_eq!(dest, vec![1011]); // 1000 + ADJ_SCALE(11)
     }
 
@@ -2116,9 +2116,9 @@ mod tests {
             9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000
         ];
         let mut dest = vec![0; 16];
-        
+
         scale_down_adj(&mut dest, &src, 0, 0);
-        
+
         assert_eq!(dest, vec![
             1011, 2011, 3011, 4011, 5011, 6011, 7011, 8011,
             9011, 10011, 11011, 12011, 13011, 14011, 15011, 16011
@@ -2129,9 +2129,9 @@ mod tests {
     fn test_scale_down_adj_right_shift_len8() {
         let src = vec![8000, 16000, 24000, 32000, 40000, 48000, 56000, 64000];
         let mut dest = vec![0; 8];
-        
+
         scale_down_adj(&mut dest, &src, 5, 2); // Right shift by 3, then add 11
-        
+
         assert_eq!(dest, vec![1011, 2011, 3011, 4011, 5011, 6011, 7011, 8011]);
     }
 
@@ -2139,9 +2139,9 @@ mod tests {
     fn test_scale_down_adj_left_shift_len8() {
         let src = vec![1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
         let mut dest = vec![0; 8];
-        
+
         scale_down_adj(&mut dest, &src, 2, 5); // Left shift by 3, then add 11
-        
+
         assert_eq!(dest, vec![8011, 16011, 24011, 32011, 40011, 48011, 56011, 64011]);
     }
 
@@ -2149,9 +2149,9 @@ mod tests {
     fn test_scale_down_adj_negative_values_len8() {
         let src = vec![-1000, -2000, 3000, -4000, 5000, -6000, 7000, -8000];
         let mut dest = vec![0; 8];
-        
+
         scale_down_adj(&mut dest, &src, 2, 5); // Left shift by 3, then add 11
-        
+
         assert_eq!(dest, vec![-7989, -15989, 24011, -31989, 40011, -47989, 56011, -63989]);
     }
 
@@ -2169,9 +2169,9 @@ mod tests {
             7000
         ];
         let mut dest = vec![0; 8];
-        
+
         scale_down_adj(&mut dest, &src, 0, 2); // Left shift by 2, then add 11
-        
+
         // First element: (i32::MAX / 2 - 20) << 2 would overflow, so saturates to MAX
         // Then add 11 with saturation (stays at MAX)
         assert_eq!(dest[0], i32::MAX);
@@ -2183,9 +2183,9 @@ mod tests {
     fn test_scale_down_adj_zero_values_len8() {
         let src = vec![0; 8];
         let mut dest = vec![42; 8];
-        
+
         scale_down_adj(&mut dest, &src, 0, 0); // No shift, just add 11
-        
+
         assert_eq!(dest, vec![11; 8]);
     }
 

@@ -1,0 +1,38 @@
+{
+  "buildType": {
+    "default": "debug",
+    "description": "Build type",
+    "choices": {
+      "debug": {
+        "short": "Debug",
+        "long": "Debug build",
+        "buildType": "Debug"
+      },
+      "release": {
+        "short": "Release",
+        "long": "Release build",
+        "buildType": "Release"
+      }
+    }
+  },
+  "legacy_build": {
+    "default": "Legacy",
+    "description": "Legacy build based on the original source code",
+    "choices": {
+      "Legacy": {
+        "short": "Legacy",
+        "long": "Use an original source code",
+        "settings": {
+          "LEGACY_BUILD": "ON"
+        }
+      },
+      "Migration": {
+        "short": "Migration",
+        "long": "Use new code migrated on Rust",
+        "settings": {
+          "LEGACY_BUILD": "OFF"
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 fn main() {
-    if cfg!(feature = "fallback") {
+    if cfg!(feature = "legacy-build") {
         println!("cargo::rerun-if-env-changed=CMAKE_TOOLCHAIN_FILE");
 
         let mut cmake_cfg = cmake::Config::new("..");
@@ -27,7 +27,7 @@ fn main() {
             "cargo::rustc-link-search=native={}/build",
             out_path.display()
         );
-        println!("cargo::rustc-link-lib=static=xaacdec-ref");
+        println!("cargo::rustc-link-lib=static=xaacdec-legacy");
     }
     //println!("cargo:rerun-if-changed=ixheaacd_vec_baisc_ops.h");
     let compiler_options = vec!["-DLOUDNESS_LEVELING_SUPPORT", "-I../common", "-I../drc_src"];

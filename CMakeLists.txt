@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.26)
 project(libxaac C CXX)
 enable_language(ASM)
 
-option(RC_FALLBACK "Reference build based on the original source code for verification during migration to Rust." ON)
+option(LEGACY_BUILD "Reference build based on the original source code for verification during migration to Rust.")
+set(LEGACY_BUILD_SUFFIX "-legacy") # for the output files
 
 # Unify output layout for all generators
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -31,9 +32,9 @@ else()
     set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}" --release)
 endif()
 
-if(RC_FALLBACK)
+if(LEGACY_BUILD)
     message(STATUS "Reference build based on the original source code")
-    add_definitions(-DRC_FALLBACK)
+    add_definitions(-DLEGACY_BUILD)
 endif()
 libxaac_add_compile_options()
 libxaac_add_definitions()

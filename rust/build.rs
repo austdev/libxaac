@@ -1,29 +1,44 @@
 fn main() {
-    println!("cargo::rerun-if-env-changed=CMAKE_TOOLCHAIN_FILE");
+    // Configuration type:
+    let legacy = std::env::var("CARGO_FEATURE_LEGACY_BUILD").is_ok();
 
-    let mut cmake_cfg = cmake::Config::new("..");
+    if legacy {
+        println!("cargo::rerun-if-env-changed=CMAKE_TOOLCHAIN_FILE");
 
-    cmake_cfg.build_target("libxaacdec");
+        let mut cmake_cfg = cmake::Config::new("..");
 
-    if let Some(toolchain_file) = option_env!("CMAKE_TOOLCHAIN_FILE") {
-        cmake_cfg.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
+        cmake_cfg.build_target("libxaacdec");
+
+        if let Some(toolchain_file) = option_env!("CMAKE_TOOLCHAIN_FILE") {
+            cmake_cfg.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
+        }
+
+        if cfg!(target_os = "linux")
+            && std::process::Command::new("ninja")
+                .arg("--version")
+                .spawn()
+                .is_ok()
+        {
+            cmake_cfg.generator("Ninja");
+        }
+
+        let out_path = cmake_cfg.build();
+        println!(
+            "cargo::rustc-link-search=native={}/build",
+            out_path.display()
+        );
+        println!("cargo::rustc-link-lib=static=xaacdec-ref");
+    } else {
+        todo!("Linking to Rust lib not yet implemented");
     }
 
-    if cfg!(target_os = "linux")
-        && std::process::Command::new("ninja")
-            .arg("--version")
-            .spawn()
-            .is_ok()
-    {
-        cmake_cfg.generator("Ninja");
-    }
+    // // Make the binary find the .so at runtime without LD_LIBRARY_PATH:
+    // #[cfg(target_os = "linux")]
+    // println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 
-    let out_path = cmake_cfg.build();
-    println!(
-        "cargo::rustc-link-search=native={}/build",
-        out_path.display()
-    );
-    println!("cargo::rustc-link-lib=static=xaacdec-ref");
+    // // Make the binary find the .dylib at runtime without DYLD_LIBRARY_PATH:
+    // #[cfg(target_os = "macos")]
+    // println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
 
     // Link definitions of `printf` and other legacy functions that are not in the msvcrt
     if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
