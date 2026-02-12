@@ -1,0 +1,113 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux",
+      "hidden": true,
+      "displayName": "Linux",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-gcc",
+      "inherits": "linux",
+      "displayName": "Linux GCC",
+      "toolchainFile": "cmake/toolchains/native/linux-gcc.cmake"
+    },
+    {
+      "name": "linux-gcc-legacy-debug",
+      "inherits": "linux-gcc",
+      "displayName": "Linux GCC Legacy Debug",
+      "binaryDir": "${sourceDir}/build/linux-gcc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "linux-gcc-legacy-release",
+      "inherits": "linux-gcc",
+      "displayName": "Linux GCC Legacy Release",
+      "binaryDir": "${sourceDir}/build/linux-gcc-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "linux-gcc-migration-debug",
+      "inherits": "linux-gcc",
+      "displayName": "Linux GCC Migration Debug",
+      "binaryDir": "${sourceDir}/build/linux-gcc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LEGACY_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "linux-gcc-migration-release",
+      "inherits": "linux-gcc",
+      "displayName": "Linux GCC Migration Release",
+      "binaryDir": "${sourceDir}/build/linux-gcc-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LEGACY_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "linux-clang",
+      "inherits": "linux",
+      "displayName": "Linux Clang",
+      "toolchainFile": "cmake/toolchains/native/linux-clang.cmake"
+    },
+    {
+      "name": "linux-clang-legacy-debug",
+      "inherits": "linux-clang",
+      "displayName": "Linux Clang Legacy Debug",
+      "binaryDir": "${sourceDir}/build/linux-clang-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "linux-clang-legacy-release",
+      "inherits": "linux-clang",
+      "displayName": "Linux Clang Legacy Release",
+      "binaryDir": "${sourceDir}/build/linux-clang-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "linux-clang-migration-debug",
+      "inherits": "linux-clang",
+      "displayName": "Linux Clang Migration Debug",
+      "binaryDir": "${sourceDir}/build/linux-clang-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LEGACY_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "linux-clang-migration-release",
+      "inherits": "linux-clang",
+      "displayName": "Linux Clang Migration Release",
+      "binaryDir": "${sourceDir}/build/linux-clang-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "LEGACY_BUILD": "OFF"
+      }
+    }
+  ]
+}

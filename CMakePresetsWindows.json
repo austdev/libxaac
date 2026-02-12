@@ -1,0 +1,128 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows",
+      "hidden": true,
+      "displayName": "Windows",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-msvc",
+      "inherits": "windows",
+      "displayName": "Windows MSVC",
+      "generator": "Visual Studio 17 2022",
+      "toolchainFile": "cmake/toolchains/native/windows-msvc.cmake"
+    },
+    {
+      "name": "windows-msvc-legacy",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Legacy",
+      "binaryDir": "${sourceDir}/build/windows-msvc-legacy",
+      "cacheVariables": {
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "windows-msvc-migration",
+      "inherits": "windows-msvc",
+      "displayName": "Windows MSVC Migration",
+      "binaryDir": "${sourceDir}/build/windows-msvc-migration",
+      "cacheVariables": {
+        "LEGACY_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "windows-llvm",
+      "inherits": "windows",
+      "displayName": "Windows LLVM",
+      "generator": "Visual Studio 17 2022",
+      "toolchainFile": "cmake/toolchains/native/windows-llvm.cmake"
+    },
+    {
+      "name": "windows-llvm-legacy",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Legacy",
+      "binaryDir": "${sourceDir}/build/windows-llvm-legacy",
+      "cacheVariables": {
+        "LEGACY_BUILD": "ON"
+      }
+    },
+    {
+      "name": "windows-llvm-migration",
+      "inherits": "windows-llvm",
+      "displayName": "Windows LLVM Migration",
+      "binaryDir": "${sourceDir}/build/windows-llvm-migration",
+      "cacheVariables": {
+        "LEGACY_BUILD": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-msvc-legacy-debug",
+      "description": "",
+      "displayName": "Debug",
+      "configurePreset": "windows-msvc-legacy",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-msvc-legacy-release",
+      "description": "",
+      "displayName": "Release",
+      "configurePreset": "windows-msvc-legacy",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-msvc-migration-debug",
+      "description": "",
+      "displayName": "Debug",
+      "configurePreset": "windows-msvc-migration",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-msvc-migration-release",
+      "description": "",
+      "displayName": "Release",
+      "configurePreset": "windows-msvc-migration",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-llvm-legacy-debug",
+      "description": "",
+      "displayName": "Debug",
+      "configurePreset": "windows-llvm-legacy",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-llvm-legacy-release",
+      "description": "",
+      "displayName": "Release",
+      "configurePreset": "windows-llvm-legacy",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-llvm-migration-debug",
+      "description": "",
+      "displayName": "Debug",
+      "configurePreset": "windows-llvm-migration",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-llvm-migration-release",
+      "description": "",
+      "displayName": "Release",
+      "configurePreset": "windows-llvm-migration",
+      "configuration": "Release"
+    }
+  ]
+}

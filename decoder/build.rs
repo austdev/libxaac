@@ -1,22 +1,38 @@
-
 use std::path::PathBuf;
 
 fn main() {
     if cfg!(feature = "legacy-build") {
-        println!("cargo:rustc-link-search=native=build");
-        println!("cargo:rustc-link-lib=static=xaacdec-legacy");
+        println!("cargo::rerun-if-env-changed=CMAKE_TOOLCHAIN_FILE");
+
+        let mut cmake_cfg = cmake::Config::new("..");
+
+        cmake_cfg.build_target("libxaacdec");
+        cmake_cfg.define("LEGACY_BUILD", "ON");
+
+        if let Some(toolchain_file) = option_env!("CMAKE_TOOLCHAIN_FILE") {
+            cmake_cfg.define("CMAKE_TOOLCHAIN_FILE", toolchain_file);
+        }
+
+        if cfg!(target_os = "linux")
+            && std::process::Command::new("ninja")
+                .arg("--version")
+                .spawn()
+                .is_ok()
+        {
+            cmake_cfg.generator("Ninja");
+        }
+
+        let out_path = cmake_cfg.build();
+        println!(
+            "cargo::rustc-link-search=native={}/build",
+            out_path.display()
+        );
+        println!("cargo::rustc-link-lib=static=xaacdec-legacy");
     }
     //println!("cargo:rerun-if-changed=ixheaacd_vec_baisc_ops.h");
-    let  compiler_options = vec!(
-        "-DLOUDNESS_LEVELING_SUPPORT",
-        "-I../common",
-        "-I../drc_src",
-    );
+    let compiler_options = vec!["-DLOUDNESS_LEVELING_SUPPORT", "-I../common", "-I../drc_src"];
 
-    let  ixheaacd_headers = vec!(
-        "ixheaacd_vec_baisc_ops.h",
-        "ixheaacd_main.h",
-    );
+    let ixheaacd_headers = vec!["ixheaacd_vec_baisc_ops.h", "ixheaacd_main.h"];
 
     let bindings = bindgen::Builder::default()
         .headers(ixheaacd_headers)
@@ -30,5 +46,4 @@ fn main() {
     bindings
         .write_to_file(out_path.join("gen_ixheaacd_ref.rs"))
         .expect("Couldn't write bindings!");
-
 }
