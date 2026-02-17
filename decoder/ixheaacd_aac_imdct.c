@@ -39,14 +39,14 @@
 #include "ixheaacd_audioobjtypes.h"
 #include "ixheaacd_tns.h"
 
-#define DIG_REV(i, m, j)                                      \
-  do {                                                        \
-    unsigned _ = (i);                                         \
-    _ = ((_ & 0x33333333) << 2) | ((_ & ~0x33333333) >> 2);   \
-    _ = ((_ & 0x0F0F0F0F) << 4) | ((_ & ~0x0F0F0F0F) >> 4);   \
-    _ = ((_ & 0x00FF00FF) << 8) | ((_ & ~0x00FF00FF) >> 8);   \
-    _ = ((_ & 0x0000FFFF) << 16) | ((_ & ~0x0000FFFF) >> 16); \
-    (j) = _ >> (m);                                           \
+#define DIG_REV(i, m, j)                                            \
+  do {                                                              \
+    unsigned val = (i);                                             \
+    val = ((val & 0x33333333) << 2) | ((val & ~0x33333333) >> 2);   \
+    val = ((val & 0x0F0F0F0F) << 4) | ((val & ~0x0F0F0F0F) >> 4);   \
+    val = ((val & 0x00FF00FF) << 8) | ((val & ~0x00FF00FF) >> 8);   \
+    val = ((val & 0x0000FFFF) << 16) | ((val & ~0x0000FFFF) >> 16); \
+    (j) = val >> (m);                                               \
   } while (0)
 
 #define MPYHIRC(x, y)                                                         \

@@ -26,13 +26,13 @@
 
 #define PLATFORM_INLINE __inline
 
-#define DIG_REV(i, m, j)                                    \
-  do {                                                      \
-    unsigned _ = (i);                                       \
-    _ = ((_ & 0x33333333) << 2) | ((_ & ~0x33333333) >> 2); \
-    _ = ((_ & 0x0F0F0F0F) << 4) | ((_ & ~0x0F0F0F0F) >> 4); \
-    _ = ((_ & 0x00FF00FF) << 8) | ((_ & ~0x00FF00FF) >> 8); \
-    (j) = _ >> (m);                                         \
+#define DIG_REV(i, m, j)                                          \
+  do {                                                            \
+    unsigned val = (i);                                           \
+    val = ((val & 0x33333333) << 2) | ((val & ~0x33333333) >> 2); \
+    val = ((val & 0x0F0F0F0F) << 4) | ((val & ~0x0F0F0F0F) >> 4); \
+    val = ((val & 0x00FF00FF) << 8) | ((val & ~0x00FF00FF) >> 8); \
+    (j) = val >> (m);                                             \
   } while (0)
 
 extern const FLOAT32 ixheaac_twiddle_table_fft_float[514];

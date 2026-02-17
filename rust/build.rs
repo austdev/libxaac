@@ -26,8 +26,6 @@ fn main() {
             out_path.display()
         );
         println!("cargo::rustc-link-lib=static=xaacdec-legacy");
-    } else {
-        todo!("Linking to Rust lib not yet implemented");
     }
 
     // // Make the binary find the .so at runtime without LD_LIBRARY_PATH:

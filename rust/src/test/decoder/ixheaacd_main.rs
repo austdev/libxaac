@@ -11,6 +11,7 @@
 mod ixheaacd_metadata_read;
 mod ixheaacd_error;
 mod ixheaacd_fileifc;
+use rust::src::decoder::ixheaacd_api::ixheaacd_dec_api;
 
 /// Retrurns C-compatible stderr handle
 #[inline(always)]
@@ -143,12 +144,7 @@ extern "C" {
     ) -> core::ffi::c_int;
     fn get_start_offset_in_samples(meta_info_0: metadata_info) -> core::ffi::c_int;
     fn get_play_time_in_samples(meta_info_0: metadata_info) -> core::ffi::c_int;
-    fn ixheaacd_dec_api(
-        p_ia_module_obj: pVOID,
-        i_cmd: WORD32,
-        i_idx: WORD32,
-        pv_value: pVOID,
-    ) -> IA_ERRORCODE;
+
     fn ia_drc_dec_api(
         p_ia_module_obj: pVOID,
         i_cmd: WORD32,

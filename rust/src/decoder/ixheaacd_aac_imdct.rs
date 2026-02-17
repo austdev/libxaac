@@ -4544,20 +4544,20 @@ pub unsafe extern "C" fn ixheaacd_fft32x32_ld_dec(
             k = k + 1;
             h2 = rev_dig[fresh245 as usize];
         } else {
-            let mut _: core::ffi::c_uint = j as core::ffi::c_uint;
-            _ = (_ & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
-                | (_ & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
+            let mut val: core::ffi::c_uint = j as core::ffi::c_uint;
+            val = (val & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
+                | (val & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
                     >> 2 as core::ffi::c_int;
-            _ = (_ & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
-                | (_ & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
+            val = (val & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
+                | (val & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
                     >> 4 as core::ffi::c_int;
-            _ = (_ & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
-                | (_ & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
+            val = (val & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
+                | (val & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
                     >> 8 as core::ffi::c_int;
-            _ = (_ & 0xffff as core::ffi::c_uint) << 16 as core::ffi::c_int
-                | (_ & !(0xffff as core::ffi::c_int) as core::ffi::c_uint)
+            val = (val & 0xffff as core::ffi::c_uint) << 16 as core::ffi::c_int
+                | (val & !(0xffff as core::ffi::c_int) as core::ffi::c_uint)
                     >> 16 as core::ffi::c_int;
-            h2 = (_ >> l1) as WORD32;
+            h2 = (val >> l1) as WORD32;
         }
         x_0 = *x0.offset(0 as core::ffi::c_int as isize);
         x_1 = *x0.offset(1 as core::ffi::c_int as isize);

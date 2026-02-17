@@ -60,17 +60,17 @@ pub unsafe extern "C" fn ixheaac_real_synth_fft_p2(
     i = 0 as core::ffi::c_int as WORD32;
     while i < npoints {
         let mut inp: *mut FLOAT32 = ptr_x;
-        let mut _: core::ffi::c_uint = i as core::ffi::c_uint;
-        _ = (_ & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
-            | (_ & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
+        let mut val: core::ffi::c_uint = i as core::ffi::c_uint;
+        val = (val & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
+            | (val & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
                 >> 2 as core::ffi::c_int;
-        _ = (_ & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
-            | (_ & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
+        val = (val & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
+            | (val & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
                 >> 4 as core::ffi::c_int;
-        _ = (_ & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
-            | (_ & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
+        val = (val & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
+            | (val & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
                 >> 8 as core::ffi::c_int;
-        h2 = (_ >> dig_rev_shift) as WORD32;
+        h2 = (val >> dig_rev_shift) as WORD32;
         if not_power_4 != 0 {
             h2 += 1 as core::ffi::c_int;
             h2 &= !(1 as core::ffi::c_int);
@@ -625,17 +625,17 @@ pub unsafe extern "C" fn ixheaac_cmplx_anal_fft_p2(
     i = 0 as core::ffi::c_int as WORD32;
     while i < npoints {
         let mut inp: *mut FLOAT32 = ptr_x;
-        let mut _: core::ffi::c_uint = i as core::ffi::c_uint;
-        _ = (_ & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
-            | (_ & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
+        let mut val: core::ffi::c_uint = i as core::ffi::c_uint;
+        val = (val & 0x33333333 as core::ffi::c_uint) << 2 as core::ffi::c_int
+            | (val & !(0x33333333 as core::ffi::c_int) as core::ffi::c_uint)
                 >> 2 as core::ffi::c_int;
-        _ = (_ & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
-            | (_ & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
+        val = (val & 0xf0f0f0f as core::ffi::c_uint) << 4 as core::ffi::c_int
+            | (val & !(0xf0f0f0f as core::ffi::c_int) as core::ffi::c_uint)
                 >> 4 as core::ffi::c_int;
-        _ = (_ & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
-            | (_ & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
+        val = (val & 0xff00ff as core::ffi::c_uint) << 8 as core::ffi::c_int
+            | (val & !(0xff00ff as core::ffi::c_int) as core::ffi::c_uint)
                 >> 8 as core::ffi::c_int;
-        h2 = (_ >> dig_rev_shift) as WORD32;
+        h2 = (val >> dig_rev_shift) as WORD32;
         if not_power_4 != 0 {
             h2 += 1 as core::ffi::c_int;
             h2 &= !(1 as core::ffi::c_int);

@@ -25,13 +25,13 @@
 #include "ixheaac_fft_ifft_rom.h"
 #include "ixheaacd_dsp_fft32x32s.h"
 
-#define DIG_REV(i, m, j)                                    \
-  do {                                                      \
-    unsigned _ = (i);                                       \
-    _ = ((_ & 0x33333333) << 2) | ((_ & ~0x33333333) >> 2); \
-    _ = ((_ & 0x0F0F0F0F) << 4) | ((_ & ~0x0F0F0F0F) >> 4); \
-    _ = ((_ & 0x00FF00FF) << 8) | ((_ & ~0x00FF00FF) >> 8); \
-    (j) = _ >> (m);                                         \
+#define DIG_REV(i, m, j)                                          \
+  do {                                                            \
+    unsigned val = (i);                                           \
+    val = ((val & 0x33333333) << 2) | ((val & ~0x33333333) >> 2); \
+    val = ((val & 0x0F0F0F0F) << 4) | ((val & ~0x0F0F0F0F) >> 4); \
+    val = ((val & 0x00FF00FF) << 8) | ((val & ~0x00FF00FF) >> 8); \
+    (j) = val >> (m);                                             \
   } while (0)
 
 FLOAT64 ixheaacd_mult32X32float(FLOAT64 a, FLOAT64 b) {
@@ -1584,4 +1584,3 @@ VOID ixheaacd_hbe_apply_ifft_336(FLOAT32 *inp, FLOAT32 *ptr_scratch, WORD32 len,
   }
   return;
 }
-
