@@ -24,13 +24,8 @@ find_package(Threads REQUIRED)
 include("${XAAC_ROOT}/cmake/utils.cmake")
 
 # Determine Rust build profile based on CMake build type
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(RUST_PROFILE "debug")
-    set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}")
-else()
-    set(RUST_PROFILE "release")
-    set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}" --release)
-endif()
+set(RUST_PROFILE $<IF:$<CONFIG:Release>,release,debug>)
+set(CARGO_CMD cargo build -F integration --target-dir "${CMAKE_CURRENT_BINARY_DIR}" $<$<CONFIG:Release>:--release>)
 
 if(LEGACY_BUILD)
     message(STATUS "Reference build based on the original source code")
